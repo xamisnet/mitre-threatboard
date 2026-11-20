@@ -1,0 +1,61 @@
+name: refresh-signals
+
+# Rebuilds the social-signal layer from live sources and opens a PR if anything
+# moved. ITEMS stay hand-curated — this only refreshes SIGNALS and reports new
+# KEV entries as candidates.
+
+on:
+  schedule:
+    - cron: '0 6 * * *'      # 06:00 UTC daily
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Verify watchlist handles still resolve
+        continue-on-error: true
+        run: python3 tools/fetch.py --verify
+
+      - name: Fetch signals
+        continue-on-error: true          # a flaky upstream shouldn't red the build
+        run: python3 tools/fetch.py --write --days 3
+
+      - name: Validate the result
+        run: node tools/validate.mjs
+
+      - name: Open a PR if the signals changed
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if git diff --quiet; then
+            echo "no change in signals — nothing to do"
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          BRANCH="refresh/signals-$(date -u +%Y%m%d)"
+          git checkout -b "$BRANCH"
+          git add -A
+          git commit -m "chore: refresh social signals ($(date -u +%Y-%m-%d))"
+          git push -u origin "$BRANCH"
+          gh pr create \
+            --base main --head "$BRANCH" \
+            --title "chore: refresh social signals ($(date -u +%Y-%m-%d))" \
+            --body "Automated signal refresh from Bluesky, Mastodon and X.
+
+          \`ITEMS\` are untouched — this only rebuilds the \`SIGNALS\` block and
+          writes \`data/new-kev.json\` with KEV entries not yet covered.
+
+          Review \`git diff\` before merging: check that the matched signals
+          actually belong to the items they were attached to."

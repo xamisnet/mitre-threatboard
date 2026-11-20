@@ -100,6 +100,10 @@ trend bars are coloured by phase and category.
 
 ![Volume colour mode](shots/mode-vol.png)
 
+### Social signal
+
+![News feed with social signal badges](shots/signals-feed.png)
+
 ---
 
 ## Data model
@@ -136,6 +140,83 @@ Field notes:
 kind of document the Brief tab renders, expanded with per-item citations. It
 shows the intended end state: news → technique → control, with caveats stated
 rather than buried.
+
+---
+
+## Refreshing — `tools/fetch.py`
+
+Rebuilds the social-signal layer from live sources. Pure stdlib, no
+dependencies.
+
+```bash
+python3 tools/fetch.py                # dry run — prints a report, writes nothing
+python3 tools/fetch.py --write        # rewrite the SIGNALS block in index.html
+python3 tools/fetch.py --verify       # only check that watchlist handles resolve
+python3 tools/fetch.py --days 7       # widen the KEV lookback (default 3)
+```
+
+**The design principle: social posts are signal, not content.** A Bluesky post
+saying "vCenter 0day being exploited!!" is a lead, not a verified item. So the
+fetcher never invents dashboard items from a post. Instead it:
+
+1. pulls structured data for enrichment — CISA KEV, EPSS, NVD, RSS
+2. pulls social chatter — Bluesky, Mastodon, and X when a token is present
+3. matches chatter to your existing items **by CVE first, then by headline
+   keyword overlap**, and embeds it as `SIGNALS`
+
+Your curated `ITEMS` stay hand-written. The fetcher makes them live, and tells
+you which new KEV entries you haven't covered yet (`data/new-kev.json`).
+
+Matched signals appear as a **social** badge on the card and a source list in
+the detail panel, with platform, author, timestamp, engagement and a link.
+
+### Sources, and what they actually allow
+
+Verified against the live endpoints:
+
+| Source | Access | Notes |
+|---|---|---|
+| **CISA KEV** | ✅ no auth | Full JSON catalogue of exploited vulns |
+| **FIRST EPSS** | ✅ no auth | Exploitation probability per CVE |
+| **NVD 2.0** | ✅ no auth | CVSS, CWE, descriptions (rate-limited) |
+| **BleepingComputer RSS** | ✅ no auth | 15 items/feed |
+| **The Hacker News RSS** | ✅ no auth | 50 items/feed |
+| **SecurityWeek RSS** | ❌ 403 | Blocks default user-agents — needs a browser UA |
+| **Bluesky** | ✅ author feeds | Per-account feeds work unauthenticated. **Keyword search is edge-blocked (403)** regardless of headers, so the fetcher follows accounts rather than searching. |
+| **Mastodon** | ⚠️ instance-dependent | Tag timelines are public on many instances (mastodon.social, hachyderm.io, fosstodon.org, c.im). Some (infosec.exchange, mstdn.social) return 422 and require auth — handled gracefully, not fatal. |
+| **X / Twitter** | 🔑 token required | Needs a paid API bearer token. Set `X_BEARER_TOKEN` to enable. Without it the adapter **reports itself unavailable rather than pretending** — you'll see `(X: no X_BEARER_TOKEN — skipped, not silently failed)` in the output. |
+
+Scripts also fail loudly: any source error is collected and printed, and the
+script exits `1` so CI surfaces it.
+
+### The watchlist
+
+`tools/watchlist.json` — edit freely:
+
+```json
+{
+  "bluesky_accounts": ["bleepingcomputer.com", "briankrebs.bsky.social"],
+  "mastodon_instances": ["mastodon.social", "hachyderm.io"],
+  "mastodon_tags": ["cybersecurity", "infosec", "ransomware"],
+  "mastodon_accounts": [{ "instance": "mastodon.social", "acct": "thehackernews" }],
+  "x_accounts": []
+}
+```
+
+Every handle is verified live on each run — unresolvable ones are reported and
+skipped rather than silently dropped. Run `--verify` after editing.
+
+**On seeding the list honestly:** I only ship handles I confirmed resolve
+against the live APIs. I did not pad it with plausible-looking researcher
+handles that might not exist. To grow it, watch which accounts actually post
+about the tags you care about and add them.
+
+### Running it on a schedule
+
+`.github/workflows/refresh.yml` runs daily at 06:00 UTC (and on demand),
+refreshes the signals, validates them, and **opens a pull request** if anything
+changed. It never auto-merges — matched signals are heuristic, so a human
+should eyeball the diff before it lands.
 
 ---
 
@@ -180,8 +261,19 @@ Treat the ranking as an input to judgement, not a verdict.
 
 **Attribution is provisional** throughout, and the dashboard says so per item.
 
+**Social signals are unverified leads.** They are matched to items by CVE ID or
+headline keyword overlap — a heuristic that will occasionally attach a post to
+the wrong item, or attach noise. Treat the `SIGNALS` layer as "who is talking
+about this", never as corroboration of a fact. The dashboard labels it as such
+in the UI.
+
+**Bluesky keyword search does not work here.** It is edge-blocked (403) on the
+public API regardless of headers, so the fetcher follows accounts instead of
+searching. That is a real limitation, not a config problem.
+
 **No secrets, no telemetry.** The app makes no outbound requests; source links
-open in a new tab only when clicked.
+open in a new tab only when clicked. The fetcher runs locally and only ever
+talks to the public endpoints listed above.
 
 ---
 

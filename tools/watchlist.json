@@ -1,0 +1,25 @@
+{
+  "_comment": "Watchlist for tools/fetch.py. Every handle here is verified live on each run; unresolvable ones are reported and skipped rather than silently dropped. Add your own accounts freely.",
+  "bluesky_accounts": [
+    "bleepingcomputer.com",
+    "briankrebs.bsky.social",
+    "bsky.app"
+  ],
+  "mastodon_instances": [
+    "mastodon.social",
+    "hachyderm.io",
+    "fosstodon.org",
+    "c.im"
+  ],
+  "mastodon_tags": [
+    "cybersecurity",
+    "infosec",
+    "ransomware",
+    "vulnerability"
+  ],
+  "mastodon_accounts": [
+    { "instance": "mastodon.social", "acct": "thehackernews" }
+  ],
+  "x_accounts": [],
+  "_x_note": "X requires a paid API bearer token. Set X_BEARER_TOKEN to enable; the adapter reports itself unavailable otherwise rather than pretending."
+}
