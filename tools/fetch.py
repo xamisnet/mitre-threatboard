@@ -178,7 +178,7 @@ def fetch_mastodon(instances, tags, accounts):
                 acct = s.get("account", {}).get("acct", "?")
                 dom = s.get("account", {}).get("url", "").split("/@")[-1]
                 out.append(norm_post(
-                    "mastodon", f"@{acct}" + ("" if "@" in acct else f"@{dom}"),
+                    "mastodon", acct + ("" if "@" in acct else f"@{dom}"),
                     s.get("url", ""), s.get("created_at", ""),
                     s.get("content", ""),
                     s.get("reblogs_count", 0) + s.get("favourites_count", 0),
@@ -193,7 +193,7 @@ def fetch_mastodon(instances, tags, accounts):
             continue
         for s in st if isinstance(st, list) else []:
             out.append(norm_post(
-                "mastodon", f"@{acct}@{inst}", s.get("url", ""), s.get("created_at", ""),
+                "mastodon", f"{acct}@{inst}", s.get("url", ""), s.get("created_at", ""),
                 s.get("content", ""),
                 s.get("reblogs_count", 0) + s.get("favourites_count", 0),
             ))
@@ -238,8 +238,22 @@ def keywords(title):
     return {w for w in re.findall(r"[a-z0-9]{5,}", (title or "").lower()) if w not in stop}
 
 
+def dedupe(signals):
+    """Same person posts the same thing on Bluesky and Mastodon. Collapse those.
+
+    Keeps the highest-engagement copy of near-identical text.
+    """
+    best = {}
+    for s in signals:
+        key = re.sub(r"\W+", "", s["x"].lower())[:80]
+        if key not in best or s["e"] > best[key]["e"]:
+            best[key] = s
+    return list(best.values())
+
+
 def match_signals(signals, items):
     """Attach a signal to items by CVE first, then by title-keyword overlap."""
+    signals = dedupe(signals)
     by_cve, by_kw = {}, {}
     for it in items:
         blob = f"{it.get('title','')} {it.get('sum','')}"
@@ -248,24 +262,32 @@ def match_signals(signals, items):
         by_kw[it["id"]] = keywords(it.get("title", ""))
 
     out, used = {}, 0
+    reasons = {}
     for s in signals:
         cves = extract_cves(s["x"])
-        hit = set()
+        hit, why = set(), ""
         for c in cves:
-            hit |= by_cve.get(c, set())
+            if by_cve.get(c):
+                hit |= by_cve[c]
+                why = f"CVE {c}"
         if not hit:
+            # Keyword fallback needs 3 distinct shared words: 2 was letting a
+            # single generic term ("customers") attach unrelated stories.
             words = set(re.findall(r"[a-z0-9]{5,}", s["x"].lower()))
             for iid, kw in by_kw.items():
-                if len(words & kw) >= 2:
+                common = words & kw
+                if len(common) >= 3:
                     hit.add(iid)
+                    why = why or ("kw: " + ", ".join(sorted(common)[:4]))
         if hit:
             used += 1
             for iid in hit:
                 out.setdefault(iid, []).append(s)
+                reasons.setdefault(iid, why)
     for k in out:
         out[k].sort(key=lambda s: (s["e"], s["t"]), reverse=True)
         out[k] = out[k][:8]
-    return out, used
+    return out, used, reasons
 
 
 # -------------------------------------------------------------------- output
@@ -339,7 +361,7 @@ def main():
         items = [{"id": m2[0], "title": m2[1], "sum": ""}
                  for m2 in re.findall(r'\{id:"(\w+)",[^}]*?title:"(.*?)",\s*src:', html, re.S)]
 
-    sig_map, used = match_signals(signals, items)
+    sig_map, used, reasons = match_signals(signals, items)
     print(f"\n  matched {used}/{len(signals)} posts to {len(sig_map)} item(s)")
     print(f"  {len(new_kev)} KEV entr(ies) not yet in the dashboard")
 
@@ -358,7 +380,7 @@ def main():
     if sig_map:
         print("\n  Sample matched signals:")
         for iid, ss in list(sig_map.items())[:4]:
-            print(f"    {iid}: {ss[0]['p']} @{ss[0]['a']} — {ss[0]['x'][:80]}")
+            print(f"    {iid} [{reasons.get(iid,'?')}]: {ss[0]['p']} @{ss[0]['a']} — {ss[0]['x'][:70]}")
 
     if args.write:
         write_signals(sig_map)

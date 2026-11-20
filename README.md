@@ -204,12 +204,44 @@ script exits `1` so CI surfaces it.
 ```
 
 Every handle is verified live on each run — unresolvable ones are reported and
-skipped rather than silently dropped. Run `--verify` after editing.
+skipped rather than silently dropped.
 
-**On seeding the list honestly:** I only ship handles I confirmed resolve
-against the live APIs. I did not pad it with plausible-looking researcher
-handles that might not exist. To grow it, watch which accounts actually post
-about the tags you care about and add them.
+### Verifying a handle before you trust it
+
+`tools/verify-handles.py` grades candidates. **Resolving a handle proves
+nothing** — a squatter or a parody can own any name. So it pulls the profile
+and checks three things: display name matches the person, follower count is
+consistent with who they are, and the bio is not a parody/redirect/automated
+feed.
+
+```bash
+python3 tools/verify-handles.py                  # check tools/candidates.json
+python3 tools/verify-handles.py --emit-watchlist # print a paste-ready block
+```
+
+Grades: `OK` (add it), `NO-NAME` (real reach, no display name — confirm
+manually), `UNCONFIRMED`, `WEAK` (almost certainly a squatter), `SUSPECT`
+(parody / redirect / automated feed / different human).
+
+`tools/candidates.json` ships ~39 proposed journalists and researchers. Running
+it against live APIs found that **17 of the 73 handles tried resolved but were
+the wrong account** — including a `briankrebs.bsky.social` that is a
+self-described parody with an invalidated handle, a `paganini.bsky.social`
+belonging to a German artist, a `cisa.bsky.social` with 62 followers, and a
+`@TheHackerNews@mastodon.social` that says "Unofficial account" in its bio.
+This is why the script grades rather than just resolving.
+
+### Matching is deliberately conservative
+
+Signals attach on a CVE match, or on **three** distinct shared keywords with
+the item title — never two. At a threshold of two, a single generic word
+("customers") was enough to attach an unrelated story, so recall is
+intentionally traded for precision. The reason for each match is printed in the
+fetch report (`[CVE CVE-2026-115731]`, `[kw: vcenter, vmware, exploited]`) so
+you can audit it.
+
+If a person posts the same thing on both Bluesky and Mastodon, the duplicate is
+collapsed and the higher-engagement copy kept.
 
 ### Running it on a schedule
 

@@ -1,25 +1,53 @@
 {
-  "_comment": "Watchlist for tools/fetch.py. Every handle here is verified live on each run; unresolvable ones are reported and skipped rather than silently dropped. Add your own accounts freely.",
+  "_comment": "Watchlist for tools/fetch.py. Every handle was confirmed with tools/verify-handles.py: profile display name matches the person, follower count is consistent, and the bio is not a parody/redirect/automated feed. Re-run verification after editing.",
+  "_verified_on": "2026-11-21",
+  "_note_no_x": "X needs a paid bearer token; finder reports unavailable rather than faking it.",
+
   "bluesky_accounts": [
-    "bleepingcomputer.com",
-    "briankrebs.bsky.social",
-    "bsky.app"
+    "lorenzofb.bsky.social",
+    "zackwhittaker.com",
+    "kimzetter.bsky.social",
+    "josephcox.bsky.social",
+    "jasonkoebler.bsky.social",
+    "grahamcluley.com",
+    "dangoodin.bsky.social",
+    "lawrenceabrams.bsky.social",
+    "kevincollier.bsky.social",
+    "doublepulsar.com",
+    "thegrugq.bsky.social",
+    "mikko.bsky.social",
+    "maddiestone.bsky.social",
+    "shanehuntley.bsky.social",
+    "thehackernews.bsky.social"
   ],
+
   "mastodon_instances": [
     "mastodon.social",
     "hachyderm.io",
     "fosstodon.org",
     "c.im"
   ],
+
   "mastodon_tags": [
     "cybersecurity",
     "infosec",
     "ransomware",
     "vulnerability"
   ],
+
   "mastodon_accounts": [
-    { "instance": "mastodon.social", "acct": "thehackernews" }
+    { "instance": "infosec.exchange", "acct": "briankrebs" },
+    { "instance": "infosec.exchange", "acct": "lorenzofb" },
+    { "instance": "infosec.exchange", "acct": "kimzetter" },
+    { "instance": "infosec.exchange", "acct": "josephcox" },
+    { "instance": "infosec.exchange", "acct": "dangoodin" },
+    { "instance": "infosec.exchange", "acct": "lawrenceabrams" },
+    { "instance": "infosec.exchange", "acct": "malwaretech" },
+    { "instance": "infosec.exchange", "acct": "wdormann" },
+    { "instance": "infosec.exchange", "acct": "hacks4pancakes" },
+    { "instance": "infosec.exchange", "acct": "SwiftOnSecurity" },
+    { "instance": "mastodon.social", "acct": "mikko" }
   ],
-  "x_accounts": [],
-  "_x_note": "X requires a paid API bearer token. Set X_BEARER_TOKEN to enable; the adapter reports itself unavailable otherwise rather than pretending."
+
+  "x_accounts": []
 }
