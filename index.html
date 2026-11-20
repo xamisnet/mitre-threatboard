@@ -1,0 +1,1274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>THREATBOARD — MITRE ATT&amp;CK Cyber News Dashboard</title>
+<style>
+  :root{
+    --bg:#0b0f14; --bg2:#0f151d; --panel:#121a24; --panel2:#16202c;
+    --line:#22303f; --line2:#2c3d4f;
+    --fg:#e6eef7; --mut:#8ba0b6; --dim:#5f7488;
+    --crit:#ff4d5e; --high:#ff9f43; --med:#ffd93d; --low:#4dd4ac; --info:#5aa9ff;
+    --acc:#38bdf8; --acc2:#a78bfa;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:14px}
+  a{color:var(--acc);text-decoration:none}
+  a:hover{text-decoration:underline}
+  header{position:sticky;top:0;z-index:40;background:linear-gradient(180deg,#0d141c 0%,#0b0f14 100%);border-bottom:1px solid var(--line);padding:12px 18px}
+  .hrow{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .brand{display:flex;align-items:baseline;gap:10px}
+  .brand h1{margin:0;font-size:17px;letter-spacing:.14em;font-weight:700}
+  .brand h1 span{color:var(--acc)}
+  .tag{font-family:var(--mono);font-size:10px;color:var(--dim);border:1px solid var(--line2);padding:2px 7px;border-radius:99px;letter-spacing:.08em}
+  .grow{flex:1}
+  input[type=search]{background:var(--panel);border:1px solid var(--line);color:var(--fg);padding:7px 11px;border-radius:7px;width:250px;font-size:13px;outline:none}
+  input[type=search]:focus{border-color:var(--acc)}
+  nav{display:flex;gap:4px;margin-top:11px;flex-wrap:wrap}
+  nav button{background:transparent;border:1px solid transparent;color:var(--mut);padding:6px 13px;border-radius:7px;cursor:pointer;font-size:13px;font-weight:500}
+  nav button:hover{color:var(--fg);background:var(--panel)}
+  nav button.on{background:var(--panel2);color:var(--fg);border-color:var(--line2)}
+  main{padding:16px 18px 70px}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 13px;position:relative;overflow:hidden}
+  .stat b{display:block;font-size:23px;font-family:var(--mono);line-height:1.15}
+  .stat span{font-size:10.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.09em}
+  .stat.c b{color:var(--crit)} .stat.h b{color:var(--high)} .stat.a b{color:var(--acc)} .stat.l b{color:var(--low)} .stat.v b{color:var(--acc2)}
+  h2.sec{font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:var(--mut);margin:22px 0 9px;font-weight:600;display:flex;align-items:center;gap:9px}
+  h2.sec:before{content:"";width:3px;height:13px;background:var(--acc);border-radius:2px}
+  /* matrix */
+  .matrix{display:flex;gap:7px;overflow-x:auto;padding-bottom:8px}
+  .col{flex:1 0 142px;display:flex;flex-direction:column;gap:5px}
+  .colhead{background:var(--panel2);border:1px solid var(--line2);border-radius:7px;padding:6px 7px;text-align:center}
+  .colhead b{display:block;font-size:10.5px;line-height:1.25}
+  .colhead i{font-style:normal;font-family:var(--mono);font-size:8.5px;color:var(--dim)}
+  .cell{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 7px;font-size:11px;cursor:pointer;display:flex;justify-content:space-between;gap:5px;align-items:flex-start;line-height:1.32;transition:.12s}
+  .cell:hover{box-shadow:0 0 0 1px var(--acc);filter:brightness(1.32);cursor:pointer}
+  .cell.act{border-color:var(--acc);background:#14303f;box-shadow:0 0 0 1px var(--acc) inset}
+  .cell em{font-style:normal;font-family:var(--mono);font-size:8.5px;color:var(--dim);display:block}
+  .cell u{text-decoration:none;font-family:var(--mono);font-size:9.5px;color:#04121c;background:var(--acc);border-radius:99px;padding:1px 6px;font-weight:700;flex:0 0 auto}
+  .heat0{opacity:.32}
+  /* feed */
+  .feed{display:grid;gap:9px}
+  .card{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--line2);border-radius:9px;padding:12px 14px;cursor:pointer;transition:.12s}
+  .card:hover{border-color:var(--line2);background:var(--panel2);transform:translateX(2px)}
+  .card.crit{border-left-color:var(--crit)} .card.high{border-left-color:var(--high)}
+  .card.med{border-left-color:var(--med)} .card.info{border-left-color:var(--info)}
+  .card .top{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-bottom:5px}
+  .card h3{margin:0;font-size:14px;font-weight:600;flex:1;min-width:220px}
+  .chip{font-family:var(--mono);font-size:9.5px;padding:2px 7px;border-radius:99px;border:1px solid var(--line2);color:var(--mut);white-space:nowrap;text-transform:uppercase;letter-spacing:.05em}
+  .chip.crit{background:#3a151d;border-color:#7a2432;color:#ff8b98}
+  .chip.high{background:#3a2714;border-color:#7a4f22;color:#ffc184}
+  .chip.med{background:#3a3414;border-color:#7a6f22;color:#ffe98b}
+  .chip.info{background:#132a42;border-color:#255b8a;color:#9cccff}
+  .chip.kev{background:#3a1010;border-color:#8a2020;color:#ff9a9a}
+  .chip.wild{background:#0f3524;border-color:#1d6b46;color:#7dffbe}
+  .card p{margin:0;color:var(--mut);font-size:12.5px;line-height:1.5}
+  .tchips{display:flex;gap:4px;flex-wrap:wrap;margin-top:8px}
+  .tchip{font-family:var(--mono);font-size:9.5px;background:#16222f;border:1px solid var(--line2);color:#9fb6cb;padding:2px 6px;border-radius:5px}
+  .meta{font-size:11px;color:var(--dim);margin-top:7px;font-family:var(--mono)}
+  /* drawer */
+  .scrim{position:fixed;inset:0;background:#000a;backdrop-filter:blur(3px);z-index:60;display:none}
+  .scrim.on{display:block}
+  .drawer{position:fixed;top:0;right:0;bottom:0;width:min(660px,94vw);background:var(--bg2);border-left:1px solid var(--line2);z-index:61;transform:translateX(102%);transition:.24s cubic-bezier(.4,0,.2,1);overflow-y:auto;padding:22px 24px 60px}
+  .drawer.on{transform:none}
+  .drawer .x{position:absolute;top:14px;right:18px;background:var(--panel);border:1px solid var(--line2);color:var(--mut);width:30px;height:30px;border-radius:7px;cursor:pointer;font-size:16px}
+  .drawer h2{margin:6px 0 4px;font-size:19px;line-height:1.3}
+  .drawer .sub{font-family:var(--mono);font-size:11px;color:var(--dim);margin-bottom:14px}
+  .dsec{margin-top:18px}
+  .dsec h4{margin:0 0 7px;font-size:10.5px;text-transform:uppercase;letter-spacing:.12em;color:var(--mut)}
+  .dsec p{margin:0 0 8px;color:#c3d3e2;font-size:13px;line-height:1.62}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--line)}
+  th{color:var(--mut);font-size:10px;text-transform:uppercase;letter-spacing:.09em;font-weight:600}
+  td code{font-family:var(--mono);font-size:11.5px;color:var(--acc)}
+  .mctl{font-family:var(--mono);font-size:10px;color:var(--acc2);background:#1c1730;border:1px solid #3a2f5e;border-radius:4px;padding:1px 5px;margin-right:5px}
+  .bar{height:7px;background:var(--panel2);border-radius:99px;overflow:hidden;margin-top:4px}
+  .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--acc),var(--acc2))}
+  .trend{display:grid;gap:9px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+  .trow{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:9px 12px}
+  .trow .lab{display:flex;justify-content:space-between;font-size:12px;margin-bottom:2px}
+  .trow .lab b{font-family:var(--mono);color:var(--acc)}
+  .hide{display:none!important}
+  /* --- single-item scoping --- */
+  .scopebar{display:flex;align-items:center;gap:9px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line2);border-radius:9px;padding:9px 12px;margin-bottom:10px}
+  .scopebar .sblab{font-size:11px;text-transform:uppercase;letter-spacing:.11em;color:var(--mut);white-space:nowrap}
+  .scopebar select{background:var(--bg2);color:var(--fg);border:1px solid var(--line2);border-radius:7px;padding:6px 9px;font-size:12.5px;font-family:var(--sans);max-width:min(620px,74vw)}
+  .scopebar select:focus{outline:none;border-color:var(--acc)}
+  .sbbtn{background:var(--acc);color:#04121c;border:none;border-radius:7px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer}
+  .sbbtn.ghost{background:transparent;color:var(--mut);border:1px solid var(--line2);font-weight:500}
+  .sbbtn.ghost:hover{color:var(--fg);border-color:var(--acc)}
+  .badge-scope{background:#14303f;border:1px solid var(--acc);color:var(--acc);font-family:var(--mono);font-size:9.5px;padding:2px 8px;border-radius:99px;text-transform:uppercase;letter-spacing:.07em;white-space:nowrap}
+  .cell.empty{color:var(--dim);font-style:italic;background:transparent;border-style:dashed;cursor:default}
+  .cell.empty:hover{border-color:var(--line);background:transparent}
+  .bigbtn{display:block;width:100%;margin:12px 0 4px;background:var(--acc);color:#04121c;border:none;border-radius:8px;padding:11px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--sans)}
+  .bigbtn:hover{filter:brightness(1.12)}
+  .rowmeta{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+  .detbtn{background:transparent;border:1px solid var(--line2);color:var(--mut);border-radius:6px;padding:2px 10px;font-size:11px;cursor:pointer;font-family:var(--sans);white-space:nowrap}
+  .detbtn:hover{color:var(--fg);border-color:var(--acc)}
+  .card{position:relative}
+  .cardsel{position:absolute;left:0;top:0;bottom:0;width:3px;background:transparent}
+  .card.is-scoped{box-shadow:0 0 0 1px var(--acc) inset}
+  .card.is-scoped .cardsel{background:var(--acc)}
+  .note{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--acc2);border-radius:8px;padding:11px 13px;color:var(--mut);font-size:12.5px;line-height:1.6;margin-bottom:12px}
+  footer{margin-top:34px;padding-top:14px;border-top:1px solid var(--line);color:var(--dim);font-size:11px;line-height:1.7}
+  .legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--mut);margin:8px 0 2px}
+  .legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:middle;font-style:normal}
+  .brief{max-width:900px}
+  .brief h3{margin:24px 0 8px;font-size:15px;color:var(--fg);border-bottom:1px solid var(--line);padding-bottom:6px}
+  .brief h4{margin:16px 0 6px;font-size:13px;color:var(--acc)}
+  .brief p,.brief li{color:#c3d3e2;font-size:13px;line-height:1.65}
+  .brief ul{margin:6px 0;padding-left:20px}
+  .kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin:12px 0}
+  .kpi div{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:11px 13px}
+  .kpi b{display:block;color:var(--acc);font-size:12px;margin-bottom:4px}
+  .kpi span{font-size:12px;color:var(--mut);line-height:1.5}
+
+  /* ===================== COLOUR CODING =====================
+     Two independent axes, deliberately in opposite temperature ranges:
+       COOL  = kill-chain phase  (column headers + technique chips)
+       WARM  = severity          (matrix cell tint + badge, set inline so the
+                                  intensity can scale with how many events use it) */
+  .cell u{font-weight:700}
+  .cell.sev-crit u{background:var(--crit);color:#20060a}
+  .cell.sev-high u{background:var(--high);color:#201302}
+  .cell.sev-med u{background:var(--med);color:#201a02}
+  .cell.sev-info u{background:var(--info);color:#04121c}
+  .cell.sev-crit em{color:#d78d96}
+  .cell.sev-high em{color:#d4ab7e}
+  .cell.sev-med em{color:#d4cb7e}
+  .cell.sev-info em{color:#8fbde6}
+
+  /* kill-chain phase — cool palette, never overlaps the warm severity colours */
+  .colhead.ph-pre{border-color:#4c3a86;background:#1b1533}
+  .colhead.ph-pre b{color:#c4b1ff}
+  .colhead.ph-intrusion{border-color:#2f4f8a;background:#121c33}
+  .colhead.ph-intrusion b{color:#9dc0ff}
+  .colhead.ph-post{border-color:#1f5f6e;background:#0d2530}
+  .colhead.ph-post b{color:#7fdfef}
+  .colhead.ph-impact{border-color:#8a2a5e;background:#33112a}
+  .colhead.ph-impact b{color:#ff9ecd}
+  .tchip.ph-pre{background:#1b1533;border-color:#4c3a86;color:#c4b1ff}
+  .tchip.ph-intrusion{background:#121c33;border-color:#2f4f8a;color:#9dc0ff}
+  .tchip.ph-post{background:#0d2530;border-color:#1f5f6e;color:#7fdfef}
+  .tchip.ph-impact{background:#33112a;border-color:#8a2a5e;color:#ff9ecd}
+
+  /* activity-type chips in the feed */
+  .chip.cat-vuln{background:#3a1518;border-color:#7a2a30;color:#ff9aa2}
+  .chip.cat-ransom{background:#3a2411;border-color:#7a4d1e;color:#ffc184}
+  .chip.cat-breach{background:#3a3413;border-color:#7a6d1f;color:#ffe98b}
+  .chip.cat-nation{background:#221a3d;border-color:#4c3a86;color:#c4b1ff}
+  .chip.cat-ics{background:#0f3524;border-color:#1d6b46;color:#7dffbe}
+  .chip.cat-trend{background:#0f2638;border-color:#1f4b6e;color:#9cccff}
+  .chip.cat-patch{background:#242c36;border-color:#455465;color:#b3c1cf}
+
+  /* control priority tiers */
+  .mctl.t1{background:#3a151d;border-color:#7a2432;color:#ff8b98}
+  .mctl.t2{background:#3a2714;border-color:#7a4f22;color:#ffc184}
+  .mctl.t3{background:#1c1730;border-color:#3a2f5e;color:#a78bfa}
+  .bar i.t1{background:linear-gradient(90deg,var(--crit),var(--high))}
+  .bar i.t2{background:linear-gradient(90deg,var(--high),var(--med))}
+  .bar i.t3{background:linear-gradient(90deg,var(--acc),var(--acc2))}
+  .lgsep{width:1px;height:13px;background:var(--line2);display:inline-block}
+  .catsw{width:9px;height:9px;border-radius:2px;display:inline-block;margin-right:5px;vertical-align:middle}
+  .catsw.cat-vuln{background:#ff9aa2}
+  .catsw.cat-ransom{background:#ffc184}
+  .catsw.cat-breach{background:#ffe98b}
+  .catsw.cat-nation{background:#c4b1ff}
+  .catsw.cat-ics{background:#7dffbe}
+  .catsw.cat-trend{background:#9cccff}
+  .catsw.cat-patch{background:#b3c1cf}
+  .seg{display:inline-flex;border:1px solid var(--line2);border-radius:7px;overflow:hidden}
+  .segbtn{background:transparent;border:none;color:var(--mut);padding:5px 11px;font-size:11.5px;cursor:pointer;font-family:var(--sans)}
+  .segbtn:hover{color:var(--fg);background:var(--panel2)}
+  .segbtn.on{background:var(--acc);color:#04121c;font-weight:700}
+</style>
+</head>
+<body>
+<header>
+  <div class="hrow">
+    <div class="brand">
+      <h1>THREAT<span>BOARD</span></h1>
+      <span class="tag">MITRE ATT&amp;CK&reg; v18</span>
+      <span class="tag" id="windowTag">last 24h</span>
+    </div>
+    <div class="grow"></div>
+    <input type="search" id="q" placeholder="search items, CVEs, techniques…"/>
+    <span class="tag" id="clock">—</span>
+  </div>
+  <nav>
+    <button data-v="matrix" class="on">Attack Matrix</button>
+    <button data-v="feed">News &amp; Mapping</button>
+    <button data-v="trend">Trends</button>
+    <button data-v="controls">Controls</button>
+    <button data-v="brief">Brief</button>
+  </nav>
+</header>
+<main>
+  <div class="stats" id="stats"></div>
+
+  <section id="v-matrix">
+    <h2 class="sec">Technique coverage across reported activity</h2>
+    <div id="scopeBar"></div>
+    <div class="note" id="matrixNote"></div>
+    <div class="matrix" id="matrix"></div>
+    <div class="legend">
+      <span style="color:var(--dim)" id="legendCellLab">Cell = worst severity (tint deepens with volume):</span>
+      <span id="legendSevSet">
+        <span><i style="background:var(--crit)"></i>Critical</span>
+        <span><i style="background:var(--high)"></i>High</span>
+        <span><i style="background:var(--med)"></i>Medium</span>
+      </span>
+      <span class="lgsep"></span>
+      <span style="color:var(--dim)">Header &amp; chips = kill-chain phase:</span>
+      <span><i style="background:#a78bfa"></i>Pre-attack</span>
+      <span><i style="background:#60a5fa"></i>Intrusion / foothold</span>
+      <span><i style="background:#22d3ee"></i>Post-compromise</span>
+      <span><i style="background:#f472b6"></i>Impact</span>
+    </div>
+  </section>
+
+  <section id="v-feed" class="hide">
+    <h2 class="sec">Reported activity → ATT&amp;CK mapping</h2>
+    <div class="note">Click a card to <b style="color:var(--fg)">scope the Attack Matrix to that single event</b> — the map appears without covering anything. Use <b style="color:var(--fg)">ⓘ details</b> when you want the full breakdown, mitigations and primary source in the side panel.</div>
+    <div id="feedFilters" class="legend"></div>
+    <div class="feed" id="feed"></div>
+  </section>
+
+  <section id="v-trend" class="hide">
+    <h2 class="sec">Where the activity concentrates (by tactic)</h2>
+    <div class="trend" id="trendTactic"></div>
+    <h2 class="sec">By activity type</h2>
+    <div class="trend" id="trendCat"></div>
+    <h2 class="sec">Most-mapped techniques</h2>
+    <div class="trend" id="trendTech"></div>
+  </section>
+
+  <section id="v-controls" class="hide">
+    <h2 class="sec">Recommended controls — ranked by how many items they address</h2>
+    <div class="note">MITRE ATT&amp;CK mitigation codes (M-numbers) with the NIST SP 800-53 Rev.5 control families they support, ranked by coverage of the mapped activity — the cheapest risk reduction is at the top. <b style="color:var(--fg)">Colour tiers by coverage rank:</b> <span class="mctl t1">M0000</span> top 5 · <span class="mctl t2">M0000</span> next 8 · <span class="mctl t3">M0000</span> remainder.</div>
+    <table id="ctlTable"><thead><tr><th>#</th><th>Control</th><th>ATT&amp;CK</th><th>NIST 800-53</th><th>Addresses</th></tr></thead><tbody></tbody></table>
+  </section>
+
+  <section id="v-brief" class="hide">
+    <div class="brief" id="briefBody"></div>
+  </section>
+
+  <footer>
+    <div><strong>Sources:</strong> CISA KEV catalog &amp; alerts, BleepingComputer, SecurityWeek, The Hacker News, Mandiant/Google Threat Intelligence, Rapid7, F6, WatchTowr, GreyNoise, Censys, Volexity, HIBP/breach trackers, HHS/Cal AG registries. All items are third-party reporting; verify against the linked primary source before acting.</div>
+    <div style="margin-top:6px">ATT&amp;CK&reg; is a registered trademark of The MITRE Corporation. This dashboard uses MITRE ATT&amp;CK technique and mitigation identifiers for defensive mapping only.</div>
+    <div style="margin-top:6px">Generated <span id="gen">—</span></div>
+  </footer>
+</main>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer"><button class="x" id="drawerX">&times;</button><div id="drawerBody"></div></aside>
+
+<script>
+/* ============================ TACTICS ============================ */
+const TACTICS=[
+ {id:"TA0043",n:"Reconnaissance",s:"Recon"},
+ {id:"TA0042",n:"Resource Development",s:"Resource Dev"},
+ {id:"TA0001",n:"Initial Access",s:"Initial Access"},
+ {id:"TA0002",n:"Execution",s:"Execution"},
+ {id:"TA0003",n:"Persistence",s:"Persistence"},
+ {id:"TA0004",n:"Privilege Escalation",s:"Priv Escalation"},
+ {id:"TA0005",n:"Defense Evasion",s:"Defense Evasion"},
+ {id:"TA0006",n:"Credential Access",s:"Credential Access"},
+ {id:"TA0007",n:"Discovery",s:"Discovery"},
+ {id:"TA0008",n:"Lateral Movement",s:"Lateral Movement"},
+ {id:"TA0009",n:"Collection",s:"Collection"},
+ {id:"TA0011",n:"Command and Control",s:"C2"},
+ {id:"TA0010",n:"Exfiltration",s:"Exfiltration"},
+ {id:"TA0040",n:"Impact",s:"Impact"}
+];
+const TACTIC_BY_ID=Object.fromEntries(TACTICS.map(t=>[t.id,t]));
+
+/* ========================== TECHNIQUES =========================== */
+/* t:tactic, n:name */
+const TECHS={
+ T1595:{t:"TA0043",n:"Active Scanning"},
+ "T1595.002":{t:"TA0043",n:"Vulnerability Scanning"},
+ "T1596.005":{t:"TA0043",n:"Scan Databases"},
+ T1588:{t:"TA0042",n:"Obtain Capabilities"},
+ "T1588.002":{t:"TA0042",n:"Obtain Capabilities: Tool"},
+ T1587:{t:"TA0042",n:"Develop Capabilities"},
+ T1190:{t:"TA0001",n:"Exploit Public-Facing Application"},
+ T1133:{t:"TA0001",n:"External Remote Services"},
+ T1566:{t:"TA0001",n:"Phishing"},
+ "T1566.002":{t:"TA0001",n:"Spearphishing Link"},
+ T1078:{t:"TA0001",n:"Valid Accounts"},
+ "T1078.001":{t:"TA0001",n:"Default Accounts"},
+ "T1078.004":{t:"TA0001",n:"Cloud Accounts"},
+ T1199:{t:"TA0001",n:"Trusted Relationship"},
+ T1195:{t:"TA0001",n:"Supply Chain Compromise"},
+ T1059:{t:"TA0002",n:"Command and Scripting Interpreter"},
+ "T1059.006":{t:"TA0002",n:"Python"},
+ "T1059.001":{t:"TA0002",n:"PowerShell"},
+ T1203:{t:"TA0002",n:"Exploitation for Client Execution"},
+ T1204:{t:"TA0002",n:"User Execution"},
+ T1053:{t:"TA0002",n:"Scheduled Task/Job"},
+ T1072:{t:"TA0002",n:"Software Deployment Tools"},
+ T1136:{t:"TA0003",n:"Create Account"},
+ "T1505.003":{t:"TA0003",n:"Web Shell"},
+ T1098:{t:"TA0003",n:"Account Manipulation"},
+ T1543:{t:"TA0003",n:"Create or Modify System Process"},
+ T1547:{t:"TA0003",n:"Boot or Logon Autostart Execution"},
+ T1068:{t:"TA0004",n:"Exploitation for Privilege Escalation"},
+ T1548:{t:"TA0004",n:"Abuse Elevation Control Mechanism"},
+ T1611:{t:"TA0004",n:"Escape to Host"},
+ T1610:{t:"TA0004",n:"Deploy Container"},
+ T1036:{t:"TA0005",n:"Masquerading"},
+ T1070:{t:"TA0005",n:"Indicator Removal"},
+ T1562:{t:"TA0005",n:"Impair Defenses"},
+ T1218:{t:"TA0005",n:"System Binary Proxy Execution"},
+ T1550:{t:"TA0005",n:"Use Alternate Authentication Material"},
+ T1620:{t:"TA0005",n:"Reflective Code Loading"},
+ T1606:{t:"TA0006",n:"Forge Web Credentials"},
+ "T1606.002":{t:"TA0006",n:"Forge Web Credentials: SAML Tokens"},
+ T1552:{t:"TA0006",n:"Unsecured Credentials"},
+ "T1552.001":{t:"TA0006",n:"Credentials In Files"},
+ T1555:{t:"TA0006",n:"Credentials from Password Stores"},
+ T1003:{t:"TA0006",n:"OS Credential Dumping"},
+ T1110:{t:"TA0006",n:"Brute Force"},
+ T1087:{t:"TA0007",n:"Account Discovery"},
+ T1046:{t:"TA0007",n:"Network Service Discovery"},
+ T1018:{t:"TA0007",n:"Remote System Discovery"},
+ T1082:{t:"TA0007",n:"System Information Discovery"},
+ T1083:{t:"TA0007",n:"File and Directory Discovery"},
+ T1021:{t:"TA0008",n:"Remote Services"},
+ "T1021.002":{t:"TA0008",n:"SMB / Admin Shares"},
+ "T1021.001":{t:"TA0008",n:"RDP"},
+ "T1021.004":{t:"TA0008",n:"SSH"},
+ "T1550.001":{t:"TA0008",n:"Application Access Token"},
+ T1213:{t:"TA0009",n:"Data from Information Repositories"},
+ "T1213.002":{t:"TA0009",n:"SharePoint / Confluence"},
+ "T1213.003":{t:"TA0009",n:"Code Repositories"},
+ T1005:{t:"TA0009",n:"Data from Local System"},
+ T1114:{t:"TA0009",n:"Email Collection"},
+ T1119:{t:"TA0009",n:"Automated Collection"},
+ T1071:{t:"TA0011",n:"Application Layer Protocol"},
+ T1219:{t:"TA0011",n:"Remote Access Software"},
+ T1105:{t:"TA0011",n:"Ingress Tool Transfer"},
+ T1090:{t:"TA0011",n:"Proxy"},
+ T1567:{t:"TA0010",n:"Exfiltration Over Web Service"},
+ T1041:{t:"TA0010",n:"Exfiltration Over C2 Channel"},
+ T1048:{t:"TA0010",n:"Exfiltration Over Alt. Protocol"},
+ T1530:{t:"TA0010",n:"Data from Cloud Storage"},
+ T1486:{t:"TA0040",n:"Data Encrypted for Impact"},
+ T1489:{t:"TA0040",n:"Service Stop"},
+ T1490:{t:"TA0040",n:"Inhibit System Recovery"},
+ T1498:{t:"TA0040",n:"Network Denial of Service"},
+ T1499:{t:"TA0040",n:"Endpoint Denial of Service"},
+ T1565:{t:"TA0040",n:"Data Manipulation"},
+ "T1565.001":{t:"TA0040",n:"Stored Data Manipulation"},
+ T1657:{t:"TA0040",n:"Financial Theft"},
+ /* ICS matrix techniques */
+ "T0831":{t:"TA0040",n:"Manipulation of Control (ICS)"},
+ "T0836":{t:"TA0040",n:"Modify Parameter (ICS)"},
+ "T0813":{t:"TA0040",n:"Denial of Control (ICS)"},
+ "T0826":{t:"TA0040",n:"Loss of Availability (ICS)"}
+};
+/* technique -> mitigation codes */
+const TECH_MIT={
+ T1595:["M1056"],"T1595.002":["M1056","M1016"],"T1596.005":["M1056"],
+ "T1588.002":["M1056","M1019"],T1587:["M1056"],T1588:["M1056","M1019","M1047"],
+ T1190:["M1051","M1048","M1050","M1016","M1030"],T1133:["M1032","M1035","M1051","M1037"],
+ T1566:["M1017","M1032","M1054"],"T1566.002":["M1017","M1021","M1032"],
+ T1078:["M1032","M1026","M1018","M1027"],"T1078.001":["M1027","M1054"],"T1078.004":["M1032","M1018","M1015"],
+ T1199:["M1018","M1030","M1017"],T1195:["M1015","M1045","M1047","M1019"],
+ T1059:["M1038","M1040","M1042","M1033","M1040"],"T1059.006":["M1038","M1040","M1042"],
+ "T1059.001":["M1038","M1040","M1042"],T1203:["M1050","M1048","M1051"],T1204:["M1017","M1038","M1040"],
+ T1053:["M1047","M1026","M1038"],T1072:["M1015","M1026","M1030"],
+ T1136:["M1032","M1026","M1047","M1018"],"T1505.003":["M1042","M1040","M1038","M1018"],
+ T1098:["M1032","M1026","M1047"],T1543:["M1040","M1047","M1038"],T1547:["M1040","M1047","M1044"],
+ T1068:["M1051","M1050","M1040","M1019"],T1548:["M1026","M1052","M1040"],T1611:["M1048","M1030","M1051"],
+ T1610:["M1048","M1026","M1030"],
+ T1036:["M1040","M1017","M1045"],T1070:["M1047","M1029"],T1562:["M1040","M1026","M1047"],
+ T1218:["M1038","M1040","M1042"],T1550:["M1032","M1015","M1026"],T1620:["M1040","M1038"],
+ T1606:["M1032","M1015","M1026"],"T1606.002":["M1032","M1015","M1041"],
+ T1552:["M1041","M1047","M1026","M1022"],"T1552.001":["M1047","M1041","M1022"],
+ T1555:["M1043","M1027","M1040"],T1003:["M1043","M1026","M1015","M1040"],T1110:["M1036","M1032","M1027"],
+ T1087:["M1018","M1047"],T1046:["M1030","M1047","M1031"],T1018:["M1030","M1047"],
+ T1082:["M1047"],T1083:["M1047","M1022"],
+ T1021:["M1030","M1032","M1026","M1035"],"T1021.002":["M1030","M1035","M1026","M1047"],
+ "T1021.001":["M1032","M1030","M1035","M1047"],"T1021.004":["M1032","M1030","M1026"],
+ "T1550.001":["M1032","M1015","M1026"],
+ T1213:["M1047","M1018","M1026","M1057"],"T1213.002":["M1018","M1047","M1057"],
+ "T1213.003":["M1018","M1047","M1057"],T1005:["M1047","M1041","M1057"],
+ T1114:["M1047","M1021"],T1119:["M1047","M1057"],
+ T1071:["M1031","M1037","M1030"],T1105:["M1037","M1031","M1040"],T1090:["M1037","M1031"],
+ T1219:["M1037","M1031","M1040","M1047"],
+ T1567:["M1057","M1037","M1031"],T1041:["M1037","M1030","M1057"],T1048:["M1037","M1057","M1031"],
+ T1530:["M1041","M1018","M1057","M1037"],
+ T1486:["M1053","M1040","M1030","M1050"],T1489:["M1030","M1053","M1047"],T1490:["M1053","M1040","M1026"],
+ T1498:["M1037","M1031"],T1499:["M1051","M1048","M1037"],T1565:["M1041","M1040","M1026"],
+ "T1565.001":["M1041","M1040","M1026"],T1657:["M1017","M1053","M1040","M1032"],
+ "T0831":["M0800","M0804","M0810"],"T0836":["M0800","M0804"],"T0813":["M0800","M0810"],"T0826":["M0801","M0953"]
+};
+/* =========================== MITIGATIONS ========================= */
+const MIT={
+ M1015:{n:"Active Directory Configuration",nist:"AC-2, AC-6, IA-2"},
+ M1016:{n:"Vulnerability Scanning",nist:"RA-5, CM-8"},
+ M1017:{n:"User Training",nist:"AT-2, AT-3"},
+ M1018:{n:"User Account Management",nist:"AC-2, AC-6, PS-4"},
+ M1019:{n:"Threat Intelligence Program",nist:"PM-16, RA-3"},
+ M1021:{n:"Restrict Web-Based Content",nist:"AC-4, SC-7"},
+ M1022:{n:"Restrict File & Directory Permissions",nist:"AC-3, AC-6, CM-6"},
+ M1026:{n:"Privileged Account Management",nist:"AC-2, AC-6, AC-6(7)"},
+ M1027:{n:"Password Policies",nist:"IA-5, IA-5(1)"},
+ M1029:{n:"Remote Data Storage",nist:"AU-9, AU-11"},
+ M1030:{n:"Network Segmentation",nist:"AC-4, SC-7, SC-7(5)"},
+ M1031:{n:"Network Intrusion Prevention",nist:"SI-4, SC-7"},
+ M1032:{n:"Multi-factor Authentication",nist:"IA-2, IA-2(1), IA-2(2)"},
+ M1033:{n:"Limit Software Installation",nist:"CM-7, CM-11"},
+ M1035:{n:"Limit Access to Resource Over Network",nist:"AC-4, AC-17, SC-7"},
+ M1036:{n:"Account Use Policies",nist:"AC-7, AC-7(2)"},
+ M1037:{n:"Filter Network Traffic",nist:"SC-7, AC-4, SI-4(4)"},
+ M1038:{n:"Execution Prevention",nist:"CM-7, SI-3, SI-3(1)"},
+ M1040:{n:"Behavior Prevention on Endpoint",nist:"CM-6, SI-3, SI-4"},
+ M1041:{n:"Encrypt Sensitive Information",nist:"SC-13, SC-28, SC-28(1)"},
+ M1042:{n:"Disable or Remove Feature or Program",nist:"CM-7, CM-7(1), CM-11"},
+ M1043:{n:"Credential Access Protection",nist:"IA-5, AC-6"},
+ M1044:{n:"Restrict Library Loading",nist:"CM-7, SI-4"},
+ M1045:{n:"Code Signing",nist:"CM-5, SI-7, SI-7(1)"},
+ M1047:{n:"Audit",nist:"AU-2, AU-3, AU-6, AU-12"},
+ M1048:{n:"Application Isolation and Sandboxing",nist:"SC-39, SC-7(21)"},
+ M1050:{n:"Exploit Protection",nist:"SI-16, CM-6"},
+ M1051:{n:"Update Software",nist:"SI-2, CM-6, RA-5"},
+ M1052:{n:"User Account Control",nist:"AC-6, CM-6"},
+ M1053:{n:"Data Backup",nist:"CP-9, CP-9(1), CP-10"},
+ M1054:{n:"Software Configuration",nist:"CM-6, CM-7"},
+ M1056:{n:"Pre-compromise",nist:"RA-3, RA-5, CA-8"},
+ M1057:{n:"Data Loss Prevention",nist:"AC-4, SI-4, SC-7(10)"},
+ M0800:{n:"Least Privilege",nist:"AC-6 (IEC 62443 SR 2.1)"},
+ M0801:{n:"Restrict Network Access",nist:"SC-7 (IEC 62443 SR 5.1)"},
+ M0804:{n:"Human User Authentication",nist:"IA-2 (IEC 62443 SR 1.1)"},
+ M0810:{n:"Network Allowlists",nist:"SC-7 (IEC 62443 SR 5.2)"},
+ M0953:{n:"Data Backup",nist:"CP-9 (IEC 62443 SR 7.3)"}
+};
+
+/* ============================== ITEMS ============================ */
+/* sev: crit|high|med|info ; cat: vuln|breach|ransom|nation|ics|trend|patch */
+const ITEMS=[
+{id:"n01",d:"2026-11-19",sev:"crit",cat:"vuln",kev:0,wild:1,
+ title:"VMware vCenter zero-day CVE-2026-123890 exploited since September by China-linked APT",
+ src:"BleepingComputer / SecurityWeek / Mandiant",
+ url:"https://www.bleepingcomputer.com/news/security/vmware-patches-vcenter-zero-day-exploited-in-attacks-since-september/",
+ tch:["T1190","T1078","T1136","T1606.002","T1552","T1068","T1505.003","T1046","T1087","T1555"],
+ sum:"CVSS 9.8 authentication bypass in the VMware Directory Service (vmdird). Armory Castle (formerly UNC5221 / Warp Panda) chained it from a BeyondTrust Remote Support zero-day (CVE-2026-102764), then used the custom tool <b>Bonesaw</b> to create an authenticated session as administrator@vsphere.local, steal the LMDB, extract SAML signing material, mint an SSO admin account and forge SAML tokens. The vCenter master encryption key and DB credentials were taken before moving to an ESXi host. A SLIMSAVAGE web shell gave persistence on an internal Linux appliance. Patched 19 Nov in VMSA-2026-0009; no workaround, no fix for 7.0.",
+ act:["Armory Castle (UNC5221 / Warp Panda) — suspected China state-sponsored espionage"],
+ ctl:["M1051 Update Software — patch vCenter to 9.1.1.0200 / 9.0.2.0200 / 8.0 U3m this week; 7.x has no fix, isolate it.",
+      "M1032 Multi-factor Authentication + M1015 AD Configuration — the SAML path is the pivot; enforce MFA and rotate SSO signing certificates.",
+      "M1035 Limit Access to Resource Over Network — management interfaces must never be internet-reachable; put vCenter behind a jump host.",
+      "M1047 Audit — hunt for administrator@vsphere.local sessions and vmdirdbcp RPC calls in vpxd/vmdird logs.",
+      "M1041 Encrypt Sensitive Information + M1026 Privileged Account Management — rotate the vCenter master key and all service credentials.",
+      "M1040 Behaviour Prevention on Endpoint — block web-shell writes on Linux appliances (SLIMSAVAGE pattern)."]},
+
+{id:"n02",d:"2026-11-19",sev:"crit",cat:"vuln",kev:0,wild:1,
+ title:"‘NGINX2Root’ — five critical NGINX HTTP/2 flaws, public PoC, container escape to host",
+ src:"BleepingComputer / SecurityWeek / Wiz / Xint",
+ url:"https://www.bleepingcomputer.com/news/security/critical-nginx-nginx2root-bugs-let-attackers-hijack-servers/",
+ tch:["T1190","T1203","T1611","T1610","T1068","T1499"],
+ sum:"CVE-2026-123007 (flow-control memory corruption, versions 1.9.5–1.31.8) and CVE-2026-123633 (use-after-free when proxying HTTP/2) give unauthenticated RCE in an NGINX worker. Three more UAFs (CVE-2026-121810, CVE-2026-123634, CVE-2026-113425) affect HTTP/3 proxying, DNS subrequests and mail proxy auth. Xint chained a Linux SCTP kernel bug to escape a Docker container and get root on the host. Fixed in NGINX 1.30.7 / 1.31.9; 66% of sampled HTTPS endpoints still negotiate HTTP/2.",
+ act:["Opportunistic mass scanning (Wiz, Xint, Rapid7, Ikotas, Metnir — independent discovery)"],
+ ctl:["M1051 Update Software — NGINX OSS ≥1.30.7 or ≥1.31.9; NGINX Plus 37.0.8.1 / 37.3.0.1. Fastest single win this week.",
+      "M1042 Disable or Remove Feature or Program — if you cannot patch today, disable HTTP/2 (and HTTP/3) listeners on internet-facing servers.",
+      "M1048 Application Isolation and Sandboxing + M1030 Network Segmentation — container escape means the host is in scope; segment and harden the kernel (SCTP).",
+      "M1050 Exploit Protection — enable ASLR/CFG and kernel hardening to raise the cost of memory-corruption exploitation.",
+      "M1037 Filter Network Traffic — front-end WAF/IPS rules for malformed HTTP/2 HEADERS frames while patching."]},
+
+{id:"n03",d:"2026-11-19",sev:"crit",cat:"vuln",kev:0,wild:1,
+ title:"Java4Shell (CVE-2026-114938) — OpenJDK RCE, internet-wide probing has begun",
+ src:"SecurityWeek / GreyNoise / WatchTowr / Cloudflare",
+ url:"https://www.securityweek.com/java4shell-exploitation-attempts-begin-as-vendors-rush-out-advisories/",
+ tch:["T1190","T1595.002","T1595","T1036","T1203","T1588.002"],
+ sum:"Memory-corruption bug in OpenJDK 17.0.6+ Base64 handling, exploitable only on x86-64 CPUs with AVX-512 VBMI. Calif achieved unauthenticated RCE against default Jira, Confluence, Jenkins and Keycloak, but each needs a bespoke chain. GreyNoise saw 150+ shaped requests from 5 IPs; WatchTowr saw 'java4shell-recon' user agents plus blind exploitation; Cloudflare caught an actor switching to a Chrome-spoofed UA ~17h after reconnaissance and re-using the same host for Artex (an AI pentest framework). Cisco has 12+ affected products with no fix yet; Elastic, Red Hat, Siemens impacted.",
+ act:["Unattributed mass exploitation; Artex AI pentest framework abuse"],
+ ctl:["M1051 Update Software — patch OpenJDK/JRE where a vendor fix exists; take Siemens Industrial Edge Management instances offline until patched.",
+      "M1048 Application Isolation and Sandboxing — run affected Java services with a hardened JVM security policy and low-privilege service accounts.",
+      "M1037 Filter Network Traffic + M1031 Network IPS — block the known 'java4shell-recon' UA and shaped Base64 payloads at the edge.",
+      "M1032 Multi-factor Authentication on the Jira/Confluence/Jenkins layer, because post-exploitation goes straight for integration service accounts.",
+      "M1047 Audit — alert on new admin API tokens in Jenkins/Jira and on Base64-dense POST bodies to Java endpoints."]},
+
+{id:"n04",d:"2026-11-19",sev:"crit",cat:"vuln",kev:0,wild:1,
+ title:"PHP2Shell (CVE-2026-109618 / -109619) exploited in the wild; CVE-2026-115560 queued behind it",
+ src:"BleepingComputer / SecurityWeek / Huntress / Wiz",
+ url:"https://www.bleepingcomputer.com/news/security/php2shell-security-flaws-now-sucessfully-exploited-in-the-wild/",
+ tch:["T1190","T1203","T1499","T1059"],
+ sum:"Two critical RCE flaws in the core PHP engine (collectively 'PHP2Shell') are confirmed exploited in the wild, with Heartbleed-style memory disclosure in the same family. A third flaw, CVE-2026-115560 in session-upload-progress handling, was published two days after the patches and is being patched now. Roughly 70% of the web runs PHP, so exposure is effectively the public internet.",
+ act:["Opportunistic exploitation; cryptominers and reverse shells reported in related campaigns"],
+ ctl:["M1051 Update Software — this is the highest-volume exposure on the internet; patch PHP across every host and container image.",
+      "M1048 Application Isolation and Sandboxing — run PHP-FPM workers as non-privileged, per-site users in isolated pools.",
+      "M1038 Execution Prevention + M1040 Behaviour Prevention on Endpoint — block interpreter spawning shells and crypto-mining behaviour.",
+      "M1042 Disable or Remove Feature — remove unused PHP extensions and disable allow_url_include / risky ini settings.",
+      "M1037 Filter Network Traffic — WAF virtual-patch for the known exploit shapes while your fleet catches up."]},
+
+{id:"n05",d:"2026-11-19",sev:"crit",cat:"vuln",kev:0,wild:1,
+ title:"Cisco Expressway CVE-2026-76466 — root RCE exploited days after PoC, AI-written lateral-movement tooling",
+ src:"SecurityWeek / F6",
+ url:"https://www.securityweek.com/hackers-exploit-cisco-expressway-vulnerability-soon-after-poc-release/",
+ tch:["T1190","T1133","T1059.006","T1046","T1018","T1021.002","T1213.003","T1005","T1552"],
+ sum:"CVSS 9.8 unauthenticated root RCE in clustered Expressway Core/Edge, caused by persistent cookies reaching the database service. A PoC appeared on GitHub and F6 then investigated a real intrusion against a Russian organisation: two internet-exposed X15.5.3 nodes breached, pivoting into two internal cluster nodes. Post-exploitation used custom Python scripts that scanned the network, located SMB shares, talked to SQL Server and WinRM and searched GitLab repositories for credentials — with code comments suggesting an AI assistant wrote them. Fix: X15.5.20, no workaround.",
+ act:["Unattributed intrusion; AI-assisted tooling"],
+ ctl:["M1051 Update Software — Expressway X15.5.20; X14 and earlier must move release.",
+      "M1037 Filter Network Traffic — if you cannot patch, block TCP 4371–4372 at the firewall except from trusted cluster node IPs (F6's workaround).",
+      "M1035 Limit Access to Resource Over Network — collaboration edge gateways should not be directly internet-exposed without an authenticated front door.",
+      "M1032 Multi-factor Authentication on every service account the scripts went hunting for (SQL, WinRM, GitLab).",
+      "M1047 Audit — Erlang system logs on Expressway are the detection point; alert on unexpected RPC commands.",
+      "M1057 Data Loss Prevention + T1213.003 — monitor GitLab for bulk cloning by leaked service tokens."]},
+
+{id:"n06",d:"2026-11-19",sev:"crit",cat:"vuln",kev:1,wild:1,
+ title:"Apache Axis CVE-2026-90436 — Confluence hit, service account to M365 in 12 hours (KEV, due 21 Nov)",
+ src:"SecurityWeek / Rapid7 / N-able",
+ url:"https://www.securityweek.com/critical-apache-roller-axis-vulnerabilities-exploited-in-attacks/",
+ tch:["T1190","T1078","T1078.004","T1552","T1087","T1213.002","T1021","T1567"],
+ sum:"CVSS 9.8 unsafe-reflection RCE in end-of-life Apache Axis 1.x, exploitable against Atlassian Confluence Data Center and N-able N-central when their legacy Axis component is reachable. Rapid7 observed an intrusion where, within 4 hours of initial exploit, the attacker held a service account credential and was querying a production cloud data warehouse; ~12 hours in, they signed into Microsoft 365 using an integration service account. CISA added it to KEV with a 21 Nov deadline; Previdian logged 50 attempts from 14 IPs.",
+ act:["Unattributed; credential-focused, financially/espionage-motivated pattern"],
+ ctl:["M1051 Update Software — Confluence Data Center ≥9.2.28 (or 10.x); N-central 2026.4 HF3; Axis 1.x is EOL — migrate the SOAP engine.",
+      "M1042 Disable or Remove Feature or Program — kill the legacy Axis/API surface on N-central and any EOL SOAP endpoint.",
+      "M1026 Privileged Account Management + M1018 User Account Management — integration service accounts are the springboard; scope them to read-only and no cloud data-warehouse rights.",
+      "M1032 Multi-factor Authentication + M1015 AD Configuration on Entra ID; a single integration account should not be able to reach M365 unphishably.",
+      "M1047 Audit — baseline every integration account's API calls; alert when one starts querying the warehouse or M365 within hours of a web-server POST.",
+      "M1030 Network Segmentation between the public web tier and cloud data platforms."]},
+
+{id:"n07",d:"2026-11-18",sev:"crit",cat:"vuln",kev:0,wild:1,
+ title:"Apache Roller CVE-2026-129448 — unauthenticated RCE via XML-RPC deserialization, actively exploited",
+ src:"SecurityWeek / Apache",
+ url:"https://www.securityweek.com/critical-apache-roller-axis-vulnerabilities-exploited-in-attacks/",
+ tch:["T1190","T1203","T1059"],
+ sum:"CVSS 9.8 unsafe deserialization in Roller's XML-RPC interface, which processes attacker data before authentication. Apache confirmed active exploitation on 17 Nov. Disabling XML-RPC through the admin UI does not stop it. Affects Roller 4.0.0–6.1.4; fixed in 6.1.6, with 15 more bugs fixed in 6.1.7. Same root cause as the September CVE-2026-82384.",
+ act:["Confirmed active exploitation (unattributed)"],
+ ctl:["M1051 Update Software — Roller 6.1.6 or later.",
+      "M1042 Disable or Remove Feature or Program — the XML-RPC endpoint must be removed or firewalled, not just toggled off.",
+      "M1038 Execution Prevention — block Java deserialization gadget behaviour at the endpoint.",
+      "M1030 Network Segmentation — blogging/Roller instances rarely need internet exposure."]},
+
+{id:"n08",d:"2026-11-17",sev:"high",cat:"vuln",kev:1,wild:0,
+ title:"Perforce Puppet Enterprise CVE-2026-115731 — CVSS 9.9 deserialization RCE (KEV)",
+ src:"CISA KEV / Senserva",
+ url:"https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+ tch:["T1190","T1059","T1552","T1078"],
+ sum:"Puppet's report-processing code deserializes untrusted data, letting a client holding any CA-signed agent certificate execute code on the Puppet Server as the service user. If the CA auto-signs requests without verification, an unauthenticated network attacker can obtain a valid certificate and exploit it. Added to KEV 17 Nov, remediation due 1 Dec.",
+ act:["Added to CISA KEV on evidence of active exploitation"],
+ ctl:["M1051 Update Software — apply Perforce's mitigation immediately (remediation due 1 Dec under BOD 26-04).",
+      "M1015 Active Directory Configuration analog: harden the Puppet CA — require manual/verified signing rather than auto-signing agent CSRs.",
+      "M1030 Network Segmentation — the Puppet Server should never be reachable from untrusted networks.",
+      "M1047 Audit — review the CA for certificates issued to unexpected hosts.",
+      "M1040 Behaviour Prevention — detect unexpected child processes under the Puppet service user."]},
+
+{id:"n09",d:"2026-11-18",sev:"high",cat:"vuln",kev:1,wild:1,
+ title:"Synology DSM CVE-2024-10441 added to KEV; check your NAS fleet",
+ src:"CISA KEV / Senserva",
+ url:"https://senserva.com/exploited-this-week.html",
+ tch:["T1190","T1078","T1133"],
+ sum:"CVSS 9.8 flaw in Synology DiskStation Manager added to KEV on 18 Nov — the newest publicly exploited entry tracked this week. NAS devices are a favourite staging and backup-destruction target because they hold the very backups ransomware crews want to delete.",
+ act:["Exploited in the wild"],
+ ctl:["M1051 Update Software — confirm DSM is fully updated before end of business.",
+      "M1035 Limit Access to Resource Over Network — remove DSM from the internet; use VPN/ZTNA for remote access.",
+      "M1053 Data Backup — ensure the NAS backup target is offline/immutable so it cannot be the single point of failure.",
+      "M1032 Multi-factor Authentication + M1054 Software Configuration on DSM admin accounts."]},
+
+{id:"n10",d:"2026-11-18",sev:"high",cat:"vuln",kev:1,wild:1,
+ title:"BerriAI LiteLLM CVE-2026-40217 — 62% EPSS, the most likely to be attacked next (KEV)",
+ src:"CISA KEV / FIRST EPSS / Senserva",
+ url:"https://senserva.com/exploited-this-week.html",
+ tch:["T1190","T1078","T1078.004","T1552","T1530"],
+ sum:"Improper authentication (CVSS 8.8) in LiteLLM, the LLM gateway used widely to broker access to model APIs. FIRST rates it at 62% probability of exploitation in the next 30 days — the highest on this week's KEV list. An AI gateway is effectively a credential vault for every upstream model key.",
+ act:["Exploited in the wild"],
+ ctl:["M1051 Update Software — patch LiteLLM now; highest near-term exploitation probability in this window.",
+      "M1015 Active Directory Configuration (identity hardening) + M1032 MFA on the gateway's admin surface.",
+      "M1030 Network Segmentation — keep the LLM gateway off the public internet and in a dedicated segment.",
+      "M1041 Encrypt Sensitive Information + M1026 Privileged Account Management — rotate all upstream model API keys; scope each key to least privilege.",
+      "M1047 Audit — log and alert on new virtual-key creation, which is the classic LiteLLM abuse."]},
+
+{id:"n11",d:"2026-11-18",sev:"high",cat:"vuln",kev:1,wild:1,
+ title:"Vanderbilt REDCap CVE-2026-90817 — CVSS 9.8 in research data capture (KEV)",
+ src:"CISA KEV / Senserva",
+ url:"https://senserva.com/exploited-this-week.html",
+ tch:["T1190","T1078","T1530"],
+ sum:"Critical flaw in REDCap, the research electronic data capture platform used across universities and hospitals to hold clinical trial and patient data. Added to KEV 18 Nov. Combines the healthcare and research-sector exposure that makes it attractive to both extortion crews and espionage actors.",
+ act:["Exploited in the wild"],
+ ctl:["M1051 Update Software — patch REDCap immediately.",
+      "M1030 Network Segmentation + M1035 Limit Access — research platforms holding clinical data should be internal-only.",
+      "M1041 Encrypt Sensitive Information — encrypt the research database at rest.",
+      "M1018 User Account Management — review project-level access; REDCap permissions drift badly over time."]},
+
+{id:"n12",d:"2026-11-13",sev:"crit",cat:"vuln",kev:1,wild:1,
+ title:"Barracuda ESG chain — auth bypass (CVE-2026-116606) + root command injection (CVE-2026-111560)",
+ src:"CISA KEV / Mandiant / Barracuda",
+ url:"https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+ tch:["T1190","T1133","T1078","T1505.003","T1059","T1552"],
+ sum:"CVE-2026-116606 (CVSS critical, EPSS 10.9%) lets an unauthenticated remote attacker invoke a configuration-import function and restore a crafted backup archive, rewriting the appliance's global configuration. It chains with CVE-2026-111560, an OS command injection that executes as root via a crafted timezone value — affecting ESG, Load Balancer, ADC, Message Archiver, WAF and Web Security Gateway. Mandiant published both.",
+ act:["Exploited in the wild (Mandiant-disclosed)"],
+ ctl:["M1051 Update Software — patch the whole Barracuda estate, not just ESG; the command-injection flaw spans seven product lines.",
+      "M1035 Limit Access to Resource Over Network — email security gateways should not expose their admin/config-import path to the internet.",
+      "M1050 Exploit Protection + M1040 Behaviour Prevention — detect config-import activity and root-level child processes on the appliance.",
+      "M1047 Audit — alert on global-configuration changes and unexpected backup-archive restores.",
+      "M1041 Encrypt Sensitive Information — rotate any secrets stored in the appliance configuration."]},
+
+{id:"n13",d:"2026-11-06",sev:"high",cat:"vuln",kev:1,wild:1,
+ title:"SonicWall SonicOS SSLVPN CVE-2026-19868 — SAML and MFA bypass (KEV, due today)",
+ src:"CISA KEV / SonicWall PSIRT",
+ url:"https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+ tch:["T1133","T1078","T1548","T1550"],
+ sum:"Use of single-factor authentication lets anyone with valid credentials for an alternate authentication method bypass SAML controls — and bypass SAML-enforced MFA entirely. This is the exact pattern ransomware crews use to walk into VPNs: you believe MFA is enforced, the product quietly is not enforcing it on that path. Remediation was due 20 November.",
+ act:["Added to CISA KEV; ransomware crews have been attacking VPN concentrators as a primary entry point"],
+ ctl:["M1032 Multi-factor Authentication — patch first, then verify MFA is actually enforced on every SSLVPN authentication path, not just the SAML one.",
+      "M1051 Update Software — apply SonicWall's SSLVPN fix; the due date has passed.",
+      "M1042 Disable or Remove Feature or Program — disable alternative auth methods (local/bypass accounts) on the SSLVPN.",
+      "M1035 Limit Access — restrict the management and SSLVPN portal to known IP ranges.",
+      "M1047 Audit — review VPN authentication logs for logins that skipped the MFA prompt."]},
+
+{id:"n14",d:"2026-11-13",sev:"high",cat:"vuln",kev:1,wild:1,
+ title:"Check Point CVE-2026-123039 local root escalation + UnrealIRCd CVE-2026-114713 command injection",
+ src:"CISA KEV / Check Point",
+ url:"https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+ tch:["T1068","T1548","T1059","T1078"],
+ sum:"Check Point Firewall, MDS, Security Gateway and Security Management Servers ship a world-writable local socket used by the Gaia OS DynamicCLI daemon, which runs as root without authenticating connecting processes — any local user becomes root. Separately, UnrealIRCd lets any user on a network with two or more linked servers inject server-to-server commands executed with server authority. Both are in KEV, both forensically triaged, and Check Point's was flagged as used in ransomware campaigns.",
+ act:["Ransomware-linked (Check Point entry)"],
+ ctl:["M1051 Update Software — apply Check Point hotfixes and the UnrealIRCd patch.",
+      "M1026 Privileged Account Management + M1022 Restrict File and Directory Permissions — audit for world-writable sockets and local-user sprawl on security appliances.",
+      "M1040 Behaviour Prevention — detect unexpected root processes spawned by a security-management daemon.",
+      "M1047 Audit — log local logins on Gaia OS; treat any non-admin SSH session on a firewall as hostile."]},
+
+{id:"n15",d:"2026-11-13",sev:"crit",cat:"nation",kev:1,wild:1,
+ title:"Ivanti Connect Secure zero-day chain — root without logging in, then AD credentials and BitLocker keys",
+ src:"SecurityAffairs / Volexity / Ivanti",
+ url:"https://securityaffairs.com/202175/security/u-s-cisa-adds-ivanti-connect-secure-flaws-to-its-known-exploited-vulnerabilities-catalog.html",
+ tch:["T1133","T1190","T1078","T1068","T1552","T1003","T1213","T1021"],
+ sum:"Volexity documented an unauthenticated RCE chain against Ivanti Connect Secure VPNs combining an authentication bypass (CVE-2026-104935, CVSS 8.6), remote code execution and local privilege escalation (CVE-2026-111357, CVE-2026-118527) to reach root without logging in. Post-exploitation targeted Active Directory credentials, LAPS passwords and BitLocker recovery keys, then moved laterally off the VPN appliance. Remediation deadlines ran through 2 and 13 November.",
+ act:["Unattributed espionage-grade actor; VPN-appliance specialist tradecraft"],
+ ctl:["M1051 Update Software — all three CVEs have patches; VPN appliances are the single highest-value internet-facing asset you own.",
+      "M1032 Multi-factor Authentication + M1015 AD Configuration — the target was AD, LAPS and BitLocker material; assume credential compromise once exploited.",
+      "M1041 Encrypt Sensitive Information + M1043 Credential Access Protection — rotate LAPS passwords, BitLocker recovery keys and krbtgt if the appliance was touched.",
+      "M1047 Audit — hunt for lateral movement originating from the VPN appliance; Volexity's specific indicator.",
+      "M1030 Network Segmentation — the VPN device should not have a free path into the domain."]},
+
+{id:"n16",d:"2026-11-18",sev:"crit",cat:"vuln",kev:1,wild:1,
+ title:"JFrog Artifactory CVE-2026-82329 — attackers minting admin tokens days after disclosure",
+ src:"SecurityWeek / WatchTowr / CISA KEV",
+ url:"https://www.securityweek.com/critical-jfrog-artifactory-vulnerability-reportedly-exploited-in-the-wild/",
+ tch:["T1190","T1078","T1552","T1550.001","T1213.003","T1195"],
+ sum:"WatchTowr observed in-the-wild exploitation days after public disclosure, with attackers 'minting themselves admin tokens'. An artifact repository is a supply-chain crown jewel: whoever controls the tokens can push a poisoned package into your build pipeline and every downstream consumer inherits it.",
+ act:["Unattributed; supply-chain-focused"],
+ ctl:["M1051 Update Software — patch Artifactory; treat this as supply-chain critical, not just a web app.",
+      "M1026 Privileged Account Management + M1018 User Account Management — rotate all Artifactory tokens and API keys; the abuse is token creation.",
+      "M1047 Audit — alert on new admin-scope token creation and on token use from unfamiliar IPs.",
+      "M1045 Code Signing + M1015 build-pipeline hardening — signed artifacts and immutable repositories blunt the downstream impact.",
+      "M1030 Network Segmentation — the artifact repo should not be internet-reachable."]},
+
+{id:"n17",d:"2026-11-18",sev:"crit",cat:"vuln",kev:0,wild:1,
+ title:"Palo Alto Networks PAN-OS zero-day exploited in the wild, no patch at disclosure",
+ src:"CyberScoop / SecurityWeek",
+ url:"https://cyberscoop.com/palo-alto-networks-pan-os-firewall-zero-day-vulnerability-exploited/",
+ tch:["T1190","T1133","T1078","T1562","T1021"],
+ sum:"A critical PAN-OS zero-day was being exploited in the wild before a patch or a public description of the attack scope existed. Edge firewalls remain the most attractive internet-facing target on the board because compromising them gives an attacker both a foothold and the ability to blind the monitoring that would catch it.",
+ act:["Exploited in the wild; attribution pending"],
+ ctl:["M1051 Update Software — apply PAN-OS fixes the moment they land; this is a same-day-patch scenario.",
+      "M1035 Limit Access to Resource Over Network — management interfaces on a firewall must never be internet-facing.",
+      "M1047 Audit — out-of-band logging to a collector the firewall cannot reach or silence; exploit of an edge device is a visibility risk as much as an access risk.",
+      "M1032 Multi-factor Authentication + M1026 Privileged Account Management on firewall admin accounts.",
+      "M1056 Pre-compromise + M1019 Threat Intelligence — subscribe to vendor PSIRT advisories for edge appliances as a standing control."]},
+
+{id:"n18",d:"2026-11-19",sev:"high",cat:"breach",kev:0,wild:0,
+ title:"Transport for London breach exposes 265,000 Oyster photocard customers",
+ src:"BleepingComputer",
+ url:"https://www.bleepingcomputer.com/news/security/transport-for-london-breach-exposes-265-000-oyster-card-users-data/",
+ tch:["T1078","T1213","T1530","T1567","T1119"],
+ sum:"TfL announced that around 265,000 Oyster photocard customers may have had account details exposed. A public-transport authority holds a rich identity graph — names, addresses, dates of birth, travel patterns, sometimes concessionary status — which is exactly the profile data attackers use for targeted phishing and account-takeover against other services.",
+ act:["Unattributed breach; disclosure stage"],
+ ctl:["M1041 Encrypt Sensitive Information + M1057 Data Loss Prevention — customer account databases need encryption at rest and egress monitoring.",
+      "M1026 Privileged Account Management + M1018 User Account Management — review who and what could reach the customer-record store.",
+      "M1047 Audit — access logging on the database tier is how you scope a disclosure like this.",
+      "M1017 User Training — 265k customers become phishing targets; warning them is a control, not a courtesy.",
+      "M1015 Identity hardening for the public-facing account system."]},
+
+{id:"n19",d:"2026-11-19",sev:"high",cat:"breach",kev:0,wild:0,
+ title:"SBC Medical Group — 1.6 million customers' data stolen across two incidents",
+ src:"BleepingComputer / SEC 8-K",
+ url:"https://www.bleepingcomputer.com/news/security/hackers-steal-data-of-16-million-sbc-medical-group-customers/",
+ tch:["T1213","T1530","T1005","T1567","T1078"],
+ sum:"Two separate cybersecurity incidents exposed sensitive customer and employee information including personal data belonging to 1.6 million people, disclosed via an SEC 8-K filing. Healthcare remains the sector with the highest breach rate and the highest per-record cost, and the double-incident detail suggests the first response did not fully evict the intruder.",
+ act:["Unattributed; extortion/opportunistic"],
+ ctl:["M1041 Encrypt Sensitive Information — PHI-grade encryption at rest and in transit.",
+      "M1026 Privileged Account Management + M1015 identity hardening — healthcare intrusions almost always start with a valid account, not a novel exploit.",
+      "M1047 Audit + M1057 Data Loss Prevention — the only way to detect a double-incident eviction failure is unusually complete telemetry.",
+      "M1053 Data Backup — healthcare operations depend on continuity; tested, isolated backups are an impact control.",
+      "M1036 Account Use Policies + M1032 MFA across clinical and administrative systems."]},
+
+{id:"n20",d:"2026-11-18",sev:"high",cat:"ransom",kev:0,wild:0,
+ title:"The Gentlemen ransomware claims NVIDIA; 10-day leak countdown, no evidence supplied",
+ src:"BleepingComputer / Newsweek / Cybernews",
+ url:"https://www.bleepingcomputer.com/news/security/nvidia-investigating-gentlemen-ransomware-breach-claims/",
+ tch:["T1486","T1567","T1657","T1588.002","T1199","T1489"],
+ sum:"The Gentlemen, a RaaS operation offering affiliates up to 90% of proceeds (vs the usual 70–80%), listed NVIDIA on its leak site on 18 Nov with a ~234-hour countdown and no sample files, screenshots or scope detail. NVIDIA says it is investigating an incident that may have affected a third-party partner and found no indication its own systems or networks were affected. The group claims 1,123 victims across 95 countries, with a documented case of an affiliate double-crossing the parent crew.",
+ act:["The Gentlemen (RaaS) — manufacturing, healthcare, transport, energy, education, financial services"],
+ ctl:["T1199 Trusted Relationship / M1030 Network Segmentation — the stated vector is a third-party partner; vendor access is the risk to model.",
+      "M1053 Data Backup — immutable, offline, tested restoration, because RaaS economics depend on you having no alternative.",
+      "M1019 Threat Intelligence Program — a 10-day countdown is a negotiation signal; knowing the crew's playbook shapes the response.",
+      "M1047 Audit + M1057 DLP — exfiltration-before-encryption is this crew's model; egress detection is the control that fires in time.",
+      "M1040 Behaviour Prevention on Endpoint — detect mass file modification and shadow-copy deletion."]},
+
+{id:"n21",d:"2026-11-18",sev:"med",cat:"ransom",kev:0,wild:0,
+ title:"Ukraine and FBI arrest four ransomware operators tied to $40.5M in paid ransoms; Conti alumni",
+ src:"BleepingComputer / Ukraine National Police",
+ url:"https://www.bleepingcomputer.com/news/security/ukraine-fbi-arrest-ransomware-gang-members-tied-to-40m-in-ransoms/",
+ tch:["T1657","T1596.005","T1587","T1486","T1490","T1048"],
+ sum:"A two-year investigation into a 27-person organisation across Ukraine, Kazakhstan and Russia — connected to a wider network of 60+ members including former Conti affiliates — led to four arrests. At least 28 companies paid over $40.5M. Tradecraft was methodical: researching victims' financial standing, assets and IT weaknesses first, then stealing data and encrypting. One victim lost 1.4 TB and negotiated $10M down to $5M in BTC; Chaos and BlackSuit were used as payloads.",
+ act:["Conti alumni network; Chaos / BlackSuit ransomware"],
+ ctl:["M1019 Threat Intelligence Program — victim-selection research means attackers already know your financial position before they call; do not let negotiation strategy be improvised.",
+      "M1053 Data Backup + M1040 Behaviour Prevention — the two controls that remove the leverage.",
+      "M1056 Pre-compromise — external attack-surface reduction is the documented first phase of this crew's kill chain.",
+      "M1047 Audit + M1057 DLP — 1.4 TB of staging should be visible on egress monitoring long before negotiation.",
+      "M1017 User Training — insider and social-engineering routes feed victim research."]},
+
+{id:"n22",d:"2026-11-19",sev:"crit",cat:"ransom",kev:0,wild:0,
+ title:"8-Digits Team extortion campaign against US hospitals and schools tops $500M in demands",
+ src:"DOJ / healthcare infosec reporting",
+ url:"https://www.govinfosecurity.com/us-hospitals-warned-fresh-wave-ransomware-attacks-a-15268",
+ tch:["T1486","T1489","T1490","T1657","T1567","T1199"],
+ sum:"The 8-Digits Team targeted US hospitals and schools with ransom demands exceeding $500M and threats to publish highly sensitive patient and student records across at least six states. One alleged member was extradited from Italy. This is the pure-data-extortion model: the encryption is pressure, the patient records are the product, and the regulated entity's disclosure obligations are part of the leverage.",
+ act:["8-Digits Team"],
+ ctl:["M1053 Data Backup — restore capability is the only thing that turns a $500M demand into a nuisance.",
+      "M1057 Data Loss Prevention + M1047 Audit — exfiltration detection is the difference between a closed incident and a regulatory one.",
+      "M1019 Threat Intelligence Program + incident-response retainer — healthcare ransomware is a known wave, not a surprise; pre-negotiated IR is a control.",
+      "M1040 Behaviour Prevention on Endpoint + M1030 Network Segmentation to slow lateral movement across clinical networks.",
+      "M1017 User Training — the healthcare entry vector is overwhelmingly phishing and valid accounts."]},
+
+{id:"n23",d:"2026-11-19",sev:"high",cat:"ransom",kev:0,wild:0,
+ title:"Ransomware hits hospital operations: highest Q3 total on record; doors and HVAC affected",
+ src:"BlackFog / BankInfoSecurity / healthcare infosec",
+ url:"https://www.bankinfosecurity.com/ransomware-attack-disables-canadian-hospitals-doors-hvac-a-32535",
+ tch:["T1486","T1489","T1657","T1078","T1021"],
+ sum:"Healthcare ransomware reached its highest quarterly total on record, and the clinical impact is now physical: a Canadian hospital's ransomware attack on its facility-management system affected building doors and HVAC, while US systems have had EHR platforms taken offline and care disrupted. Psychiatric and long-term-care providers are increasingly named as victims.",
+ act:["Multiple RaaS affiliates; Vortex named in the Orlando Health extortion"],
+ ctl:["M1030 Network Segmentation — IT and building-management/OT networks must not share a broadcast domain; this is the control that keeps a ransomware event from affecting doors and HVAC.",
+      "M1035 Limit Access to Resource Over Network — building-automation systems should not be internet-reachable.",
+      "M1053 Data Backup + manual downtime procedures — clinical continuity cannot depend on a decryptor.",
+      "M1051 Update Software on OT/BMS controllers, where patching is chronically deferred.",
+      "M1040 Behaviour Prevention on Endpoint + M1032 MFA on all remote-access paths into clinical networks."]},
+
+{id:"n24",d:"2026-11-19",sev:"high",cat:"ics",kev:0,wild:1,
+ title:"Cold-chain and refrigeration controller attacks trigger joint CISA/FBI/HHS/USDA/DoT advisory",
+ src:"SecurityWeek / Censys / CISA",
+ url:"https://www.securityweek.com/us-agencies-urge-organizations-to-harden-refrigeration-controllers/",
+ tch:["T1190","T1078","T0836","T0831","T0813","T0826","T1565.001","T1133"],
+ sum:"Attacks turned supermarket fridge temperatures to 50°C, forced freezers into defrost, spoiled food and in some cases started fires; over 100 European stores and a French blood bank were hit in a second wave, with staff action preventing blood-product loss. CISA, FBI, HHS, USDA and DoT issued a joint advisory covering Copeland/Dixell XWEB EVO and Danfoss StoreView controllers. Vulncheck disclosed 14 Copeland vulnerabilities and saw two targeted immediately. Internet-exposed controllers dropped from 6,695 to 3,124 after the warning — still 47% exposed. Russian hacktivist groups Noname057(16) and Z-Pentest Alliance claimed a related intrusion, but attribution is unresolved (Iranian and state-sponsored actors remain candidates).",
+ act:["Noname057(16), Z-Pentest Alliance (claimed); Iranian / state-sponsored actors not excluded"],
+ ctl:["M0801 Restrict Network Access — take refrigeration controllers off the internet; this is the single highest-value action and the agencies' first recommendation.",
+      "M1035 Limit Access to Resource Over Network + M1037 Filter Network Traffic — where web access is genuinely required, front it with a firewall/edge device.",
+      "M0810 Network Allowlists + M1030 Network Segmentation — isolate OT devices from corporate networks entirely.",
+      "M0804 Human User Authentication + M1032 MFA — restrict controller access to trusted identities with phishing-resistant MFA.",
+      "M0800 Least Privilege / M1027 Password Policies — remove default credentials, enforce strong unique passwords, disable unused remote features.",
+      "M1047 Audit + M1044 logging — tampering is invisible without controller and network telemetry; enable logging and monitoring.",
+      "M0953 Data Backup — offsite backups of controller configurations so you can restore tampered setpoints."]},
+
+{id:"n25",d:"2026-11-19",sev:"high",cat:"vuln",kev:0,wild:0,
+ title:"ASUS Control Center Express — hard-coded key flaw gives attackers administrative control of managed fleets",
+ src:"BleepingComputer",
+ url:"https://www.bleepingcomputer.com/news/security/asus-warns-of-critical-hard-coded-key-flaw-in-control-center-express/",
+ tch:["T1078.001","T1190","T1072","T1068","T1543"],
+ sum:"Three critical vulnerabilities, including a hard-coded cryptographic key, could let a remote attacker gain administrative control of the management console and every device it manages. A management platform with a hard-coded key is a fleet-wide single point of failure: one exploit becomes administrative reach over an entire estate.",
+ act:["Vendor-disclosed; no known exploitation yet"],
+ ctl:["M1051 Update Software — Control Center Express v1.7.29 fixes all three.",
+      "M1027 Password Policies / hard-coded credential removal (M1054 Software Configuration) — hard-coded keys cannot be rotated by the customer; the only fix is the vendor patch.",
+      "M1035 Limit Access to Resource Over Network — the management console must be internal-only.",
+      "M1030 Network Segmentation — an estate-management tool should sit in a dedicated management segment, not on user VLANs.",
+      "M1057 Audit — review device-management logs for unauthorised policy pushes."]},
+
+{id:"n26",d:"2026-11-19",sev:"high",cat:"breach",kev:0,wild:0,
+ title:"ShinyHunters 'pay or leak' extortion continues — Harvard, Crunchbase, Sharecare, CyrusOne, Neogen, Medela",
+ src:"HIBP catalog / breach trackers",
+ url:"https://senserva.com/data-breaches.html",
+ tch:["T1199","T1078.004","T1530","T1567","T1119","T1213"],
+ sum:"A steady run of ShinyHunters 'pay or leak' campaigns has now published data from Harvard, Crunchbase, Sharecare, CyrusOne, Neogen and Medela, most commonly via compromised SaaS/CRM integrations rather than direct network intrusion. The pattern is consistent: authenticate into a third-party business system, bulk-export contact and profile data, then publish when the victim refuses to pay.",
+ act:["ShinyHunters (and copycat extortion crews)"],
+ ctl:["M1015 Active Directory Configuration / M1018 User Account Management — SaaS integration accounts are the access path; inventory and least-privilege them.",
+      "M1032 Multi-factor Authentication on every SaaS and CRM tenant, including service accounts.",
+      "M1057 Data Loss Prevention + M1047 Audit — bulk export from a CRM is the detectable event; alert on volume anomalies per account.",
+      "M1030 Network Segmentation is not applicable; substitute T1199 Trusted Relationship — third-party and business-process-outsourcer risk management.",
+      "M1041 Encrypt Sensitive Information — reduce the value of what a bulk export yields."]},
+
+{id:"n27",d:"2026-11-13",sev:"med",cat:"trend",kev:0,wild:0,
+ title:"Europol and partners dismantle CastleRAT and related malware infrastructure",
+ src:"Europol / HIBP",
+ url:"https://senserva.com/data-breaches.html",
+ tch:["T1588.002","T1219","T1105","T1071","T1059"],
+ sum:"Europol and international partners dismantled infrastructure supporting several malware operations, including CastleRAT — a remote access trojan enabling criminals to remotely control infected machines, with 179,745 accounts subsequently added to breach notification services. RAT infrastructure takedowns give defenders a rare window: known C2 indicators become actionable blocklists and known victims can be notified.",
+ act:["Multiple RAT operators; law-enforcement action"],
+ ctl:["M1037 Filter Network Traffic + M1031 Network IPS — apply the published CastleRAT C2 indicators while they are fresh.",
+      "M1040 Behaviour Prevention on Endpoint — RAT behaviour (remote-control, credential harvesting) is the endpoint detection target.",
+      "M1038 Execution Prevention — block unauthorised RAT execution paths.",
+      "M1047 Audit + M1019 Threat Intelligence Program — feed the takedown IOCs into detection engineering, not just a news note.",
+      "M1017 User Training — RATs arrive by phishing, fake installers and malvertising."]},
+
+{id:"n28",d:"2026-11-19",sev:"high",cat:"patch",kev:0,wild:1,
+ title:"Patch wave: Splunk fixes ~140 flaws; Microsoft patches an exploited Entra ID vulnerability",
+ src:"SecurityWeek",
+ url:"https://www.securityweek.com/splunk-patches-nearly-140-flaws-across-three-core-products/",
+ tch:["T1190","T1078.004","T1068","T1505.003","T1136"],
+ sum:"Splunk patched nearly 140 issues across three core products, including critical and high-severity authentication bypass, RCE and privilege-escalation bugs — and a SIEM is precisely the system you least want compromised, because it is the source of truth for every other investigation. Microsoft simultaneously patched an Entra ID vulnerability that was already exploited, plus 18 flaws in AI and cloud products.",
+ act:["Entra ID flaw exploited in the wild"],
+ ctl:["M1051 Update Software — patch the SIEM and the identity provider this week; these two platforms underpin every other control.",
+      "M1015 Active Directory Configuration + M1032 MFA — an exploited Entra ID flaw means token and conditional-access review, not just a patch.",
+      "M1047 Audit + M1029 Remote Data Storage — ensure SIEM log copies land where a compromised SIEM cannot rewrite them.",
+      "M1026 Privileged Account Management — Splunk admin accounts are high-value.",
+      "M1032 MFA + M1047 token revocation for any account that may have used a forged/replayed Entra token."]},
+
+{id:"n29",d:"2026-11-19",sev:"high",cat:"nation",kev:0,wild:0,
+ title:"State-sector disruption: European Commission targeted, NSA classified network (NSANet) goes down",
+ src:"SecurityWeek / press reporting",
+ url:"https://www.securityweek.com/classified-communications-network-at-the-national-security-agency-goes-down-defense-official-says/",
+ tch:["T1190","T1562","T1489","T1499","T1078","T1587"],
+ sum:"The European Commission was reported as the target of a cyberattack, and a classified internal network used by NSA employees (NSANet) went down, disrupting operations. Regardless of cause, both events illustrate the same dependency: government and diplomatic functions concentrate on a handful of classified and unclassified networks, so availability and integrity failures there have outsized political effects.",
+ act:["Attribution pending / not stated for the Commission incident"],
+ ctl:["M1030 Network Segmentation + M1035 Limit Access — enforce separation between classified, internal and public networks with monitored cross-domain paths.",
+      "M1047 Audit + M1031 Network Intrusion Prevention — visibility and anomaly detection on network backbones.",
+      "M1053 Data Backup + continuity planning for availability events, which may be accidental as easily as malicious.",
+      "M1056 Pre-compromise + M1019 Threat Intelligence Program — nation-state targeting requires standing defence, not reactive hardening.",
+      "M1026 Privileged Account Management across diplomatic and government identity systems."]},
+
+{id:"n30",d:"2026-11-19",sev:"med",cat:"trend",kev:0,wild:0,
+ title:"AI changes the attacker's economics: Artex pentest framework abuse, AI-written intrusion scripts",
+ src:"SecurityWeek / Cloudflare / F6",
+ url:"https://www.securityweek.com/java4shell-exploitation-attempts-begin-as-vendors-rush-out-advisories/",
+ tch:["T1588.002","T1587","T1595","T1036","T1059.006","T1596.005"],
+ sum:"Two converging signals this week. Cloudflare saw one IP used for both Artex (an open-source AI penetration-testing framework threat actors abuse to automate intrusions) and Java4Shell activity for the first time; and F6 found attacker scripts on the Cisco Expressway intrusion whose source comments indicated an AI assistant wrote and then patched them mid-operation. Attackers are now iterating tooling per-product, faster, and adapting in-flight.",
+ act:["Multiple unattributed actors adopting AI-assisted tooling"],
+ ctl:["M1050 Exploit Protection + M1051 Update Software — when exploit development accelerates, patch velocity is the countermeasure that scales.",
+      "M1037 Filter Network Traffic + M1031 Network IPS — automated scanning and blind exploitation increase noise at the edge; make that noise detectable.",
+      "M1040 Behaviour Prevention on Endpoint — AI-written scripts still behave like scripts; behaviour beats signatures for novel tooling.",
+      "M1047 Audit — anomalous reconnaissance volume and UA manipulation are the early-warning signals to alert on.",
+      "M1019 Threat Intelligence Program — track tooling trends so detection engineering gets ahead of the per-product exploit iterations.",
+      "M1038 Execution Prevention — restricting unapproved interpreters on servers directly blunts AI-generated scripts."]}
+];
+
+/* ============================ HELPERS ============================ */
+const SEVCLS={crit:"crit",high:"high",med:"med",info:"info"};
+const CATNAME={vuln:"Vulnerability",breach:"Breach / Disclosure",ransom:"Ransomware & Extortion",nation:"Nation-State / Gov",ics:"ICS / OT",trend:"Campaign & Trend",patch:"Patch Wave"};
+let filterTactic=null, filterCat=null, query="", scopeMatrixItem=null;
+
+function techName(id){const t=TECHS[id];return t?t.n:id;}
+function techTactic(id){const t=TECHS[id];return t?t.t:null;}
+/* kill-chain phase per tactic — drives the colour scheme */
+const PHASE={TA0043:"pre",TA0042:"pre",TA0001:"intrusion",TA0002:"intrusion",TA0003:"intrusion",TA0004:"intrusion",TA0005:"intrusion",TA0006:"intrusion",TA0007:"post",TA0008:"post",TA0009:"post",TA0011:"impact",TA0010:"impact",TA0040:"impact"};
+const PHASE_NAME={pre:"Pre-attack",intrusion:"Intrusion / foothold",post:"Post-compromise",impact:"Impact"};
+const SEV_RANK={info:0,med:1,high:2,crit:3};
+function worstSev(list){
+  let best=null;
+  list.forEach(it=>{ if(best===null||SEV_RANK[it.sev]>SEV_RANK[best]) best=it.sev; });
+  return best;
+}
+function phaseOfTac(t){return PHASE[t]||"post";}
+function phaseOfTech(id){return phaseOfTac(techTactic(id));}
+/* bar/legend colours for the two colour axes */
+const PCOL={pre:"#a78bfa",intrusion:"#60a5fa",post:"#22d3ee",impact:"#f472b6"};
+const CCOL={vuln:"#ff9aa2",ransom:"#ffc184",breach:"#ffe98b",nation:"#c4b1ff",ics:"#7dffbe",trend:"#9cccff",patch:"#b3c1cf"};
+/* severity as raw RGB, so cell tint intensity can scale with event volume */
+const SEV_RGB={crit:"255,77,94",high:"255,159,67",med:"255,217,61",info:"90,169,255"};
+const VOL_RGB="255,180,84";
+let cellMode="sev";                       /* sev | vol | phase */
+const CMODE_NAME={sev:"Severity",vol:"Volume",phase:"Phase"};
+function hexToRgb(h){const v=parseInt(h.slice(1),16);return `${(v>>16)&255},${(v>>8)&255},${v&255}`;}
+/* one function decides both the cell tint and its badge colour for the active mode */
+function cellPaint(n,sv,tac){
+  if(!n) return {st:"",badge:""};
+  let rgb,a;
+  if(cellMode==="vol"){        rgb=VOL_RGB;                          a=0.07+Math.min(n,8)*0.05; }
+  else if(cellMode==="phase"){ rgb=hexToRgb(PCOL[phaseOfTac(tac)]);   a=0.12+Math.min(n,8)*0.03; }
+  else { if(!sv) return {st:"",badge:""}; rgb=SEV_RGB[sv]; a=0.085+Math.min(n,8)*0.038; }
+  a=Math.min(a,0.5).toFixed(3);
+  return {
+    st:` style="background:rgba(${rgb},${a});border-color:rgba(${rgb},0.32);border-left:3px solid rgb(${rgb})"`,
+    badge: cellMode==="sev" ? "" : ` style="background:rgb(${rgb});color:#101010"`
+  };
+}
+function esc(s){return String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
+function visibleItems(){
+  return ITEMS.filter(it=>{
+    if(filterTactic && !it.tch.some(t=>techTactic(t)===filterTactic)) return false;
+    if(filterCat && it.cat!==filterCat) return false;
+    if(query){
+      const q=query.toLowerCase();
+      const blob=(it.title+" "+it.sum+" "+it.src+" "+it.tch.join(" ")+" "+it.tch.map(techName).join(" ")+" "+it.act.join(" ")+" "+CATNAME[it.cat]).toLowerCase();
+      if(!blob.includes(q)) return false;
+    }
+    return true;
+  });
+}
+function counts(){
+  const c={crit:0,high:0,med:0,kev:0,wild:0,ransom:0,tech:new Set(),tac:new Set()};
+  ITEMS.forEach(it=>{
+    if(it.sev==="crit")c.crit++; if(it.sev==="high")c.high++; if(it.sev==="med")c.med++;
+    if(it.kev)c.kev++; if(it.wild)c.wild++; if(it.cat==="ransom")c.ransom++;
+    it.tch.forEach(t=>{c.tech.add(t); const tt=techTactic(t); if(tt)c.tac.add(tt);});
+  });
+  return c;
+}
+
+/* ============================= STATS ============================= */
+function renderStats(){
+  const c=counts();
+  document.getElementById("stats").innerHTML=[
+    ["",ITEMS.length,"items mapped"],
+    ["c",c.crit,"critical severity"],
+    ["v",c.wild,"exploited in the wild"],
+    ["h",c.kev,"CISA KEV entries"],
+    ["l",c.tech.size,"ATT&CK techniques"],
+    ["a",c.tac.size,"tactics touched"]
+  ].map(([k,v,l])=>`<div class="stat ${k}"><b>${v}</b><span>${l}</span></div>`).join("");
+}
+
+/* ============================ MATRIX ============================= */
+function renderMatrix(){
+  const base=visibleItems();
+  const scopeIt=scopeMatrixItem?ITEMS.find(i=>i.id===scopeMatrixItem):null;
+  /* when scoped, the map shows exactly one event regardless of other filters */
+  const items=scopeIt?[scopeIt]:base;
+  const cnt={};
+  items.forEach(it=>it.tch.forEach(t=>cnt[t]=(cnt[t]||0)+1));
+
+  /* ---- scope bar ---- */
+  const sb=document.getElementById("scopeBar");
+  sb.innerHTML=`<div class="scopebar">
+      <span class="sblab">Scope the map</span>
+      <select id="scopeSel" title="Show the ATT&amp;CK map for a single news item">
+        <option value="">All ${ITEMS.length} items (last 24h)</option>
+        ${ITEMS.map(i=>`<option value="${i.id}"${scopeMatrixItem===i.id?" selected":""}>${i.id} · ${esc(i.title.slice(0,84))}</option>`).join("")}
+      </select>
+      ${scopeIt?`<span class="badge-scope">scoped to 1 item</span><button class="sbbtn ghost" id="scopeClear">✕ show all</button>`:""}
+      <span class="lgsep"></span>
+      <span class="sblab">Colour cells by</span>
+      <span class="seg">${["sev","vol","phase"].map(m=>`<button class="segbtn ${cellMode===m?"on":""}" data-cm="${m}" title="${m==="sev"?"Worst severity of the events using the technique":m==="vol"?"How many events use the technique":"Kill-chain phase of the tactic"}">${CMODE_NAME[m]}</button>`).join("")}</span>
+    </div>`;
+  document.querySelectorAll("[data-cm]").forEach(b=>b.onclick=()=>{
+    cellMode=b.dataset.cm; setHash(); renderMatrix();
+  });
+  /* legend follows the active mode */
+  const lab=document.getElementById("legendCellLab");
+  if(lab) lab.textContent = cellMode==="vol"
+      ? "Cell = number of events using it (deeper = more):"
+      : (cellMode==="phase" ? "Cell = kill-chain phase of the tactic:" : "Cell = worst severity (tint deepens with volume):");
+  const sevSet=document.getElementById("legendSevSet");
+  if(sevSet) sevSet.style.display = cellMode==="sev" ? "" : "none";
+  document.getElementById("scopeSel").onchange=e=>{
+    const v=e.target.value;
+    if(v) scopeToItem(v);                       /* select → show the map, don't cover it */
+    else { scopeMatrixItem=null; setHash(); renderAll(); }
+  };
+  const clr=document.getElementById("scopeClear");
+  if(clr) clr.onclick=()=>{scopeMatrixItem=null;setHash();renderAll();};
+
+  /* ---- explanatory note ---- */
+  document.getElementById("matrixNote").innerHTML = scopeIt
+    ? `<b style="color:var(--fg)">Scoped to a single event:</b> ${esc(scopeIt.title)} — showing only the <b>${scopeIt.tch.length}</b> ATT&amp;CK techniques this event touches, across ${new Set(scopeIt.tch.map(techTactic)).size} of the 14 tactics. Click any cell for that technique's mitigations.<div style="margin-top:9px;display:flex;gap:9px;align-items:center;flex-wrap:wrap"><button class="sbbtn ghost" id="scopeDetails">ⓘ open details for this item</button><a href="#" id="scopeAllLink">return to the full 24-hour map</a></div>`
+    : `Each cell is a technique observed in the last 24 hours of reporting; the badge counts news items mapped to it. <b style="color:var(--fg)">Pick a news item above — or click any card on the News &amp; Mapping tab — to scope this whole map to just that event.</b>`;
+  const al=document.getElementById("scopeAllLink");
+  if(al) al.onclick=e=>{e.preventDefault();scopeMatrixItem=null;setHash();renderAll();};
+  const sd=document.getElementById("scopeDetails");
+  if(sd) sd.onclick=()=>openItem(scopeIt.id);
+
+  /* ---- columns ---- */
+  const byTac={};
+  Object.entries(TECHS).forEach(([id,meta])=>{
+    if(!byTac[meta.t])byTac[meta.t]=[];
+    byTac[meta.t].push(id);
+  });
+  /* which events use each technique, so a cell can carry the worst severity */
+  const techItems={};
+  items.forEach(it=>it.tch.forEach(t=>{(techItems[t]=techItems[t]||[]).push(it);}));
+  const html=TACTICS.map(tac=>{
+    const all=(byTac[tac.id]||[]).slice().sort((a,b)=>(cnt[b]||0)-(cnt[a]||0));
+    const relevance=all.filter(id=>cnt[id]);
+    let list;
+    if(relevance.length) list=relevance;
+    else list = scopeIt ? [] : all.slice(0,6);   /* scoped: don't pad with unrelated techniques */
+    let cells=list.map(id=>{
+      const n=cnt[id]||0;
+      const mit=(TECH_MIT[id]||[]).join(" ");
+      const sv=worstSev(techItems[id]||[]);
+      const paint=cellPaint(n,sv,tac.id);
+      const cls=(n||scopeIt)?((sv&&cellMode==="sev")?"sev-"+sv:""):"heat0";
+      return `<div class="cell ${cls}"${paint.st} data-tech="${id}" title="${esc(techName(id))} (${id}) — ${n} item(s)${sv?" · worst severity "+sv.toUpperCase():""}${mit?" | "+mit:""}">
+        <span>${esc(techName(id))}<em>${id}</em></span>${n?`<u${paint.badge}>${n}</u>`:""}</div>`;
+    }).join("");
+    if(scopeIt && !cells) cells=`<div class="cell empty">not used by this event</div>`;
+    const tacTotal=relevance.reduce((s,id)=>s+(cnt[id]||0),0);
+    return `<div class="col">
+      <div class="colhead ph-${phaseOfTac(tac.id)}" data-tac="${tac.id}" title="${PHASE_NAME[phaseOfTac(tac.id)]} phase" style="cursor:pointer;${filterTactic===tac.id?'border-color:var(--acc)':''}">
+        <b>${tac.s}</b><i>${tac.id}${tacTotal?' · '+tacTotal:''}</i></div>
+      ${cells}</div>`;
+  }).join("");
+  document.getElementById("matrix").innerHTML=html;
+  document.querySelectorAll("#matrix [data-tech]").forEach(el=>el.onclick=()=>openTech(el.dataset.tech));
+  document.querySelectorAll("#matrix [data-tac]").forEach(el=>el.onclick=()=>{
+    filterTactic = filterTactic===el.dataset.tac?null:el.dataset.tac;
+    renderAll();
+  });
+}
+
+/* jump to the map, scoped to one item */
+function scopeToItem(id){
+  scopeMatrixItem=id;
+  hideDrawer();
+  setTab("matrix");
+  setHash();
+  renderAll();
+  try{ if(window.scrollTo) window.scrollTo({top:0,behavior:"smooth"}); }catch(e){}
+}
+
+/* ============================= FEED ============================== */
+function renderFeed(){
+  const cats=Object.keys(CATNAME);
+  document.getElementById("feedFilters").innerHTML=
+    `<span style="cursor:pointer;${!filterCat?'color:var(--fg)':''}" data-cat="">All types</span>`+
+    cats.map(c=>`<span style="cursor:pointer;${filterCat===c?'color:var(--fg)':''}" data-cat="${c}"><i class="catsw cat-${c}"></i>${CATNAME[c]}</span>`).join("")+
+    (filterTactic?`<span class="lgsep"></span><span style="cursor:pointer;color:var(--acc)">filtered: ${TACTIC_BY_ID[filterTactic].n} ✕</span>`:"");
+  document.querySelectorAll("[data-cat]").forEach(el=>el.onclick=()=>{filterCat=el.dataset.cat||null;renderAll();});
+  document.querySelectorAll("#feedFilters span").forEach(el=>{
+    if(el.textContent.startsWith("filtered:")) el.onclick=()=>{filterTactic=null;renderAll();};
+  });
+  const items=visibleItems();
+  document.getElementById("feed").innerHTML = items.length? items.map(it=>`
+    <article class="card ${SEVCLS[it.sev]}${scopeMatrixItem===it.id?" is-scoped":""}" data-id="${it.id}">
+      <span class="cardsel"></span>
+      <div class="top">
+        <span class="chip ${it.sev}">${it.sev==="crit"?"CRITICAL":it.sev.toUpperCase()}</span>
+        <span class="chip cat-${it.cat}">${CATNAME[it.cat]}</span>
+        ${it.kev?'<span class="chip kev">CISA KEV</span>':""}
+        ${it.wild?'<span class="chip wild">IN THE WILD</span>':""}
+        <h3>${esc(it.title)}</h3>
+      </div>
+      <p>${it.sum}</p>
+      <div class="tchips">${it.tch.map(t=>`<span class="tchip ph-${phaseOfTech(t)}" title="${TACTIC_BY_ID[techTactic(t)]?TACTIC_BY_ID[techTactic(t)].n:""} · ${PHASE_NAME[phaseOfTech(t)]}">${t}</span>`).join("")}</div>
+      <div class="meta rowmeta">
+        <span>${it.d} · ${esc(it.src)} · ${it.tch.length} techniques${scopeMatrixItem===it.id?" · <b style=\"color:var(--acc)\">shown on map</b>":""}</span>
+        <button class="detbtn" data-det="${it.id}" title="Open the full breakdown in the side panel">ⓘ details</button>
+      </div>
+    </article>`).join("") : `<div class="note">No items match the current filter.</div>`;
+  /* clicking the card body SELECTS it and shows the map — it does not cover it */
+  document.querySelectorAll("#feed .card").forEach(el=>el.onclick=()=>scopeToItem(el.dataset.id));
+  /* the side panel only opens when you ask for it */
+  document.querySelectorAll("#feed [data-det]").forEach(b=>b.onclick=e=>{
+    e.stopPropagation();
+    openItem(b.dataset.det);
+  });
+}
+
+/* ============================ TRENDS ============================= */
+function renderTrends(){
+  const items=visibleItems(); if(!items.length){document.getElementById("trendTactic").innerHTML=`<div class="note">No items match the current filter.</div>`;document.getElementById("trendCat").innerHTML="";document.getElementById("trendTech").innerHTML="";return;}
+  const tac={},cat={},tech={};
+  items.forEach(it=>{
+    const ts=new Set(it.tch.map(techTactic).filter(Boolean));
+    ts.forEach(t=>tac[t]=(tac[t]||0)+1);
+    cat[it.cat]=(cat[it.cat]||0)+1;
+    it.tch.forEach(t=>tech[t]=(tech[t]||0)+1);
+  });
+  const bar=(rows,max)=>rows.map(([k,v,col])=>`<div class="trow"><div class="lab"><span>${k}</span><b>${v}</b></div><div class="bar"><i style="width:${Math.round(v/max*100)}%;background:${col}"></i></div></div>`).join("");
+  const maxT=Math.max(...Object.values(tac));
+  document.getElementById("trendTactic").innerHTML=bar(Object.entries(tac).sort((a,b)=>b[1]-a[1]).map(([k,v])=>[TACTIC_BY_ID[k].n,v,PCOL[phaseOfTac(k)]]),maxT);
+  const maxC=Math.max(...Object.values(cat));
+  document.getElementById("trendCat").innerHTML=bar(Object.entries(cat).sort((a,b)=>b[1]-a[1]).map(([k,v])=>[CATNAME[k],v,CCOL[k]||"#38bdf8"]),maxC);
+  const topTech=Object.entries(tech).sort((a,b)=>b[1]-a[1]).slice(0,12).map(([k,v])=>[`${k} — ${techName(k)}`,v,PCOL[phaseOfTech(k)]]);
+  document.getElementById("trendTech").innerHTML=bar(topTech,topTech[0][1]);
+}
+
+/* =========================== CONTROLS ============================ */
+function renderControls(){
+  const items=visibleItems();
+  const cov={};
+  items.forEach(it=>it.tch.forEach(t=>(TECH_MIT[t]||[]).forEach(m=>{ (cov[m]=cov[m]||new Set()).add(it.id); })));
+  const rows=Object.entries(cov).map(([m,set])=>({m,n:set.size})).sort((a,b)=>b.n-a.n);
+  const max=rows.length?rows[0].n:1;
+  document.querySelector("#ctlTable tbody").innerHTML=rows.map((r,i)=>{
+    const meta=MIT[r.m]||{n:"—",nist:"—"};
+    const tier=i<5?"t1":(i<13?"t2":"t3");
+    return `<tr>
+      <td style="color:var(--dim);font-family:var(--mono)">${i+1}</td>
+      <td><strong>${esc(meta.n)}</strong></td>
+      <td><span class="mctl ${tier}">${r.m}</span></td>
+      <td style="color:var(--mut);font-size:11.5px">${meta.nist}</td>
+      <td style="min-width:130px">${r.n}
+        <div class="bar"><i class="${tier}" style="width:${Math.round(r.n/max*100)}%"></i></div></td>
+    </tr>`;
+  }).join("");
+}
+function topControls(list,limit){
+  const cov={};
+  list.forEach(it=>it.tch.forEach(t=>(TECH_MIT[t]||[]).forEach(m=>(cov[m]=cov[m]||new Set()).add(it.id))));
+  return Object.entries(cov).map(([m,s])=>({m,n:s.size})).sort((a,b)=>b.n-a.n).slice(0,limit);
+}
+
+/* =========================== DRAWER ============================== */
+function openItem(id){
+  const it=ITEMS.find(x=>x.id===id); if(!it)return;
+  scopeMatrixItem=it.id;              /* keep the map consistent with what's open */
+  renderMatrix();
+  renderFeed();
+  const tacs=[...new Set(it.tch.map(techTactic).filter(Boolean))];
+  const ctls=topControls([it],12);
+  document.getElementById("drawerBody").innerHTML=`
+    <div class="top" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px">
+      <span class="chip ${it.sev}">${it.sev==="crit"?"CRITICAL":it.sev.toUpperCase()}</span>
+      <span class="chip cat-${it.cat}">${CATNAME[it.cat]}</span>
+      ${it.kev?'<span class="chip kev">CISA KEV</span>':""}
+      ${it.wild?'<span class="chip wild">IN THE WILD</span>':""}
+    </div>
+    <h2>${esc(it.title)}</h2>
+    <div class="sub">${it.d} · ${esc(it.src)} · <a href="${it.url}" target="_blank" rel="noopener">primary source ↗</a></div>
+    <button class="bigbtn" onclick="scopeToItem('${it.id}')">▶ Show the ATT&amp;CK map for this item only (${it.tch.length} techniques)</button>
+    <div class="dsec"><h4>What happened</h4><p>${it.sum}</p></div>
+    ${it.act.length?`<div class="dsec"><h4>Attribution / actor</h4><p>${it.act.map(esc).join(" · ")}</p></div>`:""}
+    <div class="dsec"><h4>ATT&amp;CK tactics engaged</h4>
+      <p>${tacs.map(t=>`<span class="tchip ph-${phaseOfTac(t)}" title="${PHASE_NAME[phaseOfTac(t)]}">${TACTIC_BY_ID[t].n}</span>`).join(" ")}</p></div>
+    <div class="dsec"><h4>ATT&amp;CK techniques</h4>
+      <table><thead><tr><th>ID</th><th>Technique</th><th>Tactic</th><th>Mitigations</th></tr></thead><tbody>
+      ${it.tch.map(t=>{const ph=phaseOfTech(t);const tt=techTactic(t);const tc=TACTIC_BY_ID[tt];
+        return `<tr><td><code style="color:${PCOL[ph]}">${t}</code></td>
+        <td><i class="catsw" style="background:${PCOL[ph]}"></i>${esc(techName(t))}</td>
+        <td style="color:var(--mut);font-size:11.5px">${tc?tc.n:"—"}</td>
+        <td>${(TECH_MIT[t]||[]).map(m=>`<span class="mctl t3" title="${esc((MIT[m]||{}).n||"")}">${m}</span>`).join("")}</td></tr>`;}).join("")}
+      </tbody></table></div>
+    <div class="dsec"><h4>What to do about it — concrete controls</h4>
+      <ul style="margin:6px 0;padding-left:19px">${it.ctl.map(c=>`<li style="margin-bottom:7px;color:#c3d3e2;line-height:1.6">${c}</li>`).join("")}</ul></div>
+    <div class="dsec"><h4>Control codes in this item</h4>
+      ${ctls.map(c=>`<div style="margin-bottom:6px"><span class="mctl">${c.m}</span>
+        <span style="font-size:12.5px">${esc((MIT[c.m]||{}).n||"")}</span>
+        <span style="color:var(--dim);font-size:11px"> — ${esc((MIT[c.m]||{}).nist||"")}</span></div>`).join("")}
+    </div>`;
+  showDrawer();
+}
+function openTech(id){
+  const n=visibleItems().filter(it=>it.tch.includes(id));
+  const x=ITEMS.filter(it=>it.tch.includes(id));
+  const tac=techTactic(id);
+  document.getElementById("drawerBody").innerHTML=`
+    <div class="sub">ATT&amp;CK TECHNIQUE — ${PHASE_NAME[phaseOfTech(id)]} phase</div>
+    <h2>${esc(techName(id))}</h2>
+    <div class="sub"><code style="color:${PCOL[phaseOfTech(id)]}">${id}</code> · ${TACTIC_BY_ID[tac]?TACTIC_BY_ID[tac].n:"—"} ${tac?`(${tac})`:""} · <span class="tchip ph-${phaseOfTech(id)}">${PHASE_NAME[phaseOfTech(id)]}</span></div>
+    <div class="dsec"><h4>Why it is here</h4><p>This technique appears in <strong>${x.length}</strong> item(s) in the last 24 hours of reporting${n.length!==x.length?` (${n.length} under the current filter)`:""}. It maps to ${(TECH_MIT[id]||[]).length} recommended mitigations.</p></div>
+    <div class="dsec"><h4>Recommended mitigations</h4>
+      ${(TECH_MIT[id]||[]).map(m=>`<div style="margin-bottom:7px"><span class="mctl">${m}</span>
+        <span style="font-size:12.5px">${esc((MIT[m]||{}).n||"")}</span>
+        <span style="color:var(--dim);font-size:11px"> — NIST: ${esc((MIT[m]||{}).nist||"")}</span></div>`).join("")}
+    </div>
+    <div class="dsec"><h4>Reported activity using it</h4>
+      ${x.map(it=>`<div class="card ${SEVCLS[it.sev]}" style="margin-bottom:7px" onclick="openItem('${it.id}')">
+        <h3 style="font-size:13px">${esc(it.title)}</h3>
+        <div class="meta">${it.d} · ${esc(it.src)}</div></div>`).join("")}
+    </div>`;
+  showDrawer();
+}
+function showDrawer(){document.getElementById("scrim").classList.add("on");document.getElementById("drawer").classList.add("on");}
+function hideDrawer(){document.getElementById("scrim").classList.remove("on");document.getElementById("drawer").classList.remove("on");}
+
+/* ============================ BRIEF ============================== */
+function renderBrief(){
+  const items=visibleItems();
+  const tc=topControls(items,8);
+  const tt={};items.forEach(it=>it.tch.forEach(t=>tt[t]=(tt[t]||0)+1));
+  const topTech=Object.entries(tt).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const tacCount={};items.forEach(it=>new Set(it.tch.map(techTactic).filter(Boolean)).forEach(t=>tacCount[t]=(tacCount[t]||0)+1));
+  const topTac=Object.entries(tacCount).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  document.getElementById("briefBody").innerHTML=`
+  <h3>Cyber news brief — last 24 hours (as at 20 Nov 2026, 05:00 UTC)</h3>
+  <p>Themes, mapped to MITRE ATT&amp;CK, with the controls that actually change the outcome. Ten items below are confirmed exploited in the wild and six carry CISA KEV deadlines.</p>
+
+  <h3>1. The headline: three brand-new internet-facing RCEs were disclosed *and* exploited inside one week</h3>
+  <p><strong>VMware vCenter (CVE-2026-123890, CVSS 9.8)</strong> is the most consequential item on the board. A China-linked espionage group (Armory Castle / UNC5221) used it for over two months before a patch existed on 19 Nov — reaching vCenter by first breaking a BeyondTrust appliance, then minting an SSO administrator and forging SAML tokens before moving to ESXi. This is not "a CVE you should patch"; it is a full identity-compromise chain against the hypervisor layer that runs most enterprise workloads.</p>
+  <p>The same week brought <strong>NGINX2Root</strong> (five critical HTTP/2 and HTTP/3 flaws with public PoC, chainable to root on the host via a Linux SCTP bug), <strong>Java4Shell</strong> (OpenJDK RCE, already being scanned at internet scale with a 'java4shell-recon' user agent), <strong>Apache Axis</strong> (exploited against Confluence; a service account to a cloud data warehouse in four hours and into Microsoft 365 in twelve), and <strong>Apache Roller</strong> (unauthenticated XML-RPC deserialization RCE, confirmed exploited).</p>
+  <p><em>ATT&amp;CK:</em> ${topTac.map(([t,v])=>`${TACTIC_BY_ID[t].n} (${v})`).join(", ")} — dominated by <strong>T1190 Exploit Public-Facing Application</strong>, then credential theft and lateral movement.</p>
+
+  <h3>2. Ransomware has moved from encryption to pure data extortion — and healthcare is the target</h3>
+  <p>The <strong>8-Digits Team</strong> campaign against US hospitals and schools is demanding over <strong>$500M</strong> and threatening to publish patient records; a member was extradited from Italy. Healthcare ransomware hit its <strong>highest quarterly total on record</strong>, and the impact is now physical — a Canadian hospital's facility-management system was hit and <em>doors and HVAC</em> stopped working. <strong>The Gentlemen</strong> listed NVIDIA with a 10-day leak countdown and no evidence (NVIDIA points to a third-party partner). Meanwhile Ukraine and the FBI arrested four operators tied to <strong>$40.5M</strong> in paid ransoms, including Conti alumni.</p>
+  <p><em>ATT&amp;CK:</em> <strong>T1486 Data Encrypted for Impact</strong>, <strong>T1657 Financial Theft</strong>, <strong>T1490 Inhibit System Recovery</strong>, exfiltration over web services. The leverage has moved from "we encrypted you" to "we have your data and you must disclose".</p>
+
+  <h3>3. Operational technology is now a direct attack surface, not a theoretical one</h3>
+  <p>Refrigeration and cold-chain controllers were attacked to spoil food — setpoints pushed to 50°C, freezers forced to defrost, fires in some cases — across hundreds of European supermarkets and a French blood bank. CISA, the FBI, HHS, USDA and DoT issued a <strong>joint advisory</strong>; internet-exposed controllers fell from 6,695 to 3,124 after the warning, but <strong>47% remain exposed</strong>. Russian hacktivist groups claimed related activity; attribution is genuinely unresolved.</p>
+  <p><em>ATT&amp;CK:</em> ICS equivalents — <strong>T0836 Modify Parameter</strong>, <strong>T0831 Manipulation of Control</strong>, feeding into <strong>T0826 Loss of Availability</strong>. Note that the IT-matrix technique <strong>T1565 Stored Data Manipulation</strong> is the same idea in enterprise terms.</p>
+
+  <h3>4. Attackers are getting faster, and AI is part of the reason</h3>
+  <p>Two independent observations this week: Cloudflare saw a single IP used for both the <strong>Artex</strong> AI penetration-testing framework and Java4Shell exploitation, and F6 found attacker scripts in a Cisco Expressway intrusion whose comments indicated <strong>an AI assistant wrote and patched them mid-operation</strong>. Combined with public PoCs turning into working exploits in days, the defensible position is patch velocity and behaviour-based detection rather than signature chasing.</p>
+
+  <h3>Where the activity concentrates (tactics)</h3>
+  <div class="kpi">${topTac.map(([t,v])=>`<div style="border-left:3px solid ${PCOL[phaseOfTac(t)]}"><b>${TACTIC_BY_ID[t].n}</b><span>${v} of ${items.length} items touch this tactic · ${PHASE_NAME[phaseOfTac(t)]}</span></div>`).join("")}</div>
+
+  <h3>Most-mapped techniques</h3>
+  <table><thead><tr><th>Technique</th><th>Name</th><th>Phase</th><th>Items</th></tr></thead><tbody>
+  ${topTech.map(([t,v])=>`<tr><td><code style="color:${PCOL[phaseOfTech(t)]}">${t}</code></td><td><i class="catsw" style="background:${PCOL[phaseOfTech(t)]}"></i>${esc(techName(t))}</td><td style="font-size:11.5px;color:var(--mut)">${PHASE_NAME[phaseOfTech(t)]}</td><td>${v}</td></tr>`).join("")}
+  </tbody></table>
+
+  <h3>The eight controls that matter most this week</h3>
+  <table><thead><tr><th>#</th><th>Control</th><th>ATT&amp;CK</th><th>NIST 800-53</th><th>Covers</th></tr></thead><tbody>
+  ${tc.map((r,i)=>{const m=MIT[r.m]||{};const tier=i<5?"t1":(i<13?"t2":"t3");return `<tr><td>${i+1}</td><td>${esc(m.n||"")}</td><td><span class="mctl ${tier}">${r.m}</span></td><td style="color:var(--mut);font-size:11.5px">${m.nist||""}</td><td>${r.n}</td></tr>`;}).join("")}
+  </tbody></table>
+
+  <h4>Read that as a priority order</h4>
+  <ul>
+    <li><strong>M1051 Update Software</strong> tops the list because five separate exploited-in-the-wild products (vCenter, NGINX, PHP, Axis/Confluence, Expressway) all resolve to "patch this week". There is no clever compensating control for a 9.8.</li>
+    <li><strong>M1032 MFA + M1015 identity/AAD hardening</strong> is second because the vCenter, Axis and SonicWall items are all, at bottom, authentication failures — and every one of them ends with an attacker using a service or integration account.</li>
+    <li><strong>M1030 Network Segmentation and M1035 Limit Access</strong> is how you stop a compromised appliance (firewall, VPN, hypervisor, artifact repo) from becoming a compromised enterprise. Management interfaces should never be internet-facing.</li>
+    <li><strong>M1047 Audit and M1057 Data Loss Prevention</strong> are the only controls that reliably fire <em>before</em> extortion, because modern ransomware exfiltrates first. Detect the 1.4 TB leaving, not the encryption.</li>
+    <li><strong>M1053 Data Backup</strong> (immutable, offline, restoration-tested) is the control that converts a $500M demand into an inconvenience.</li>
+    <li><strong>M1040 Behaviour Prevention on Endpoint</strong> covers AI-written tooling and novel RATs that signatures will miss.</li>
+    <li><strong>M0801 Restrict Network Access / M0800 Least Privilege</strong> are the ICS equivalents: taking a refrigeration controller off the internet is the whole fix.</li>
+    <li><strong>M1056 Pre-compromise and M1019 Threat Intelligence</strong> are the standing controls — victim research and per-product exploit iteration mean you want to know their playbook before they use it on you.</li>
+  </ul>
+
+  <h3>Caveats you should carry into any decision</h3>
+  <ul>
+    <li>All of this is <strong>third-party reporting</strong>. Verify against the linked primary source before acting, especially for breach counts and attribution.</li>
+    <li><strong>Severity here reflects reported impact, not your exposure.</strong> NGINX2Root only bites if HTTP/2 is enabled on a reachable listener; Confluence/Axis only if the legacy Axis surface is present. Version-count exposure claims are misleading — check configuration.</li>
+    <li><strong>Attribution is provisional</strong> throughout: Armory Castle is "suspected" China-nexus, the fridge attacks are claimed by Russian hacktivists but Iranian or state actors are not excluded, and NSA/European Commission incidents have no public attribution at all.</li>
+    <li>The <strong>NVIDIA item is not a confirmed breach</strong> — it is an unsubstantiated leak-site listing with a countdown timer.</li>
+  </ul>`;
+}
+
+/* ============================= SHELL ============================= */
+const VIEWS=["matrix","feed","trend","controls","brief"];
+function setTab(v){
+  document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("on",x.dataset.v===v));
+  VIEWS.forEach(x=>document.getElementById("v-"+x).classList.toggle("hide",x!==v));
+}
+/* keep the URL in sync so a scoped map / open tab is shareable */
+function setHash(){
+  const p=new URLSearchParams();
+  if(scopeMatrixItem) p.set("item",scopeMatrixItem);
+  if(cellMode!=="sev") p.set("cb",cellMode);
+  const cur=document.querySelector("nav button.on");
+  if(cur && cur.dataset.v!=="matrix") p.set("tab",cur.dataset.v);
+  const s=p.toString()?"#"+p.toString():"#";
+  try{ history.replaceState(null,"",s); }catch(e){ location.hash=s; }
+}
+function applyHash(){
+  const h=new URLSearchParams(String(location.hash||"").replace(/^#/,""));
+  const it=h.get("item");
+  scopeMatrixItem=(it&&ITEMS.find(x=>x.id===it))?it:null;
+  const cb=h.get("cb");
+  cellMode=["sev","vol","phase"].includes(cb)?cb:"sev";
+  const tab=h.get("tab");
+  setTab(VIEWS.includes(tab)?tab:"matrix");
+}
+function renderAll(){
+  renderStats();renderMatrix();renderFeed();renderTrends();renderControls();renderBrief();
+}
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{ setTab(b.dataset.v); setHash(); });
+document.getElementById("q").oninput=e=>{query=e.target.value;renderAll();};
+document.getElementById("scrim").onclick=hideDrawer;
+document.getElementById("drawerX").onclick=hideDrawer;
+document.addEventListener("keydown",e=>{if(e.key==="Escape")hideDrawer();});
+window.addEventListener("hashchange",()=>{applyHash();renderAll();});
+document.getElementById("gen").textContent=new Date().toISOString().replace("T"," ").slice(0,16)+" UTC";
+function tick(){document.getElementById("clock").textContent=new Date().toISOString().replace("T"," ").slice(0,19)+"Z";}
+tick();setInterval(tick,1000);
+applyHash();
+renderAll();
+console.log("THREATBOARD ready —",ITEMS.length,"items,",Object.keys(TECHS).length,"techniques,",Object.keys(MIT).length,"mitigations");
+</script>
+</body>
+</html>

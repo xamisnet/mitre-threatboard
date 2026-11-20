@@ -1,0 +1,19 @@
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*~
+.idea/
+.vscode/
+
+# Runtime artefacts
+node_modules/
+npm-debug.log*
+/tmp/
+*.log
+/threatboard.pid
+
+# Local env
+.env
+.env.local

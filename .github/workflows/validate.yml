@@ -1,0 +1,41 @@
+name: validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  data-integrity:
+    name: data integrity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Validate ATT&CK data tables
+        run: node tools/validate.mjs
+
+      - name: Syntax-check the embedded dashboard script
+        run: |
+          # Extract the <script> body and let node parse it, so a syntax error
+          # in the single-file app fails CI instead of rendering a blank page.
+          python3 - <<'PY'
+          import re, pathlib
+          html = pathlib.Path('index.html').read_text()
+          body = re.search(r'<script>(.*)</script>', html, re.S).group(1)
+          pathlib.Path('/tmp/dashboard.js').write_text(body)
+          PY
+          node --check /tmp/dashboard.js
+          echo "embedded script parses cleanly"
+
+      - name: Check required DOM hooks are present
+        run: |
+          for id in scopeBar matrixNote matrix feed trendTactic ctlTable briefBody drawer; do
+            grep -q "id=\"$id\"" index.html || { echo "missing #$id"; exit 1; }
+          done
+          echo "all required DOM hooks present"
