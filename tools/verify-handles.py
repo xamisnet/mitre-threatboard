@@ -75,6 +75,31 @@ def verdict(display, followers, bio, cand_name=""):
     return "UNCONFIRMED"
 
 
+BSKY_URL_RE = re.compile(r"bsky\.app/profile/([A-Za-z0-9._:\-]+)")
+
+
+def discover_bluesky(instance, acct):
+    """Find a Bluesky handle a person lists on their Mastodon profile.
+
+    Beats guessing: 'hacks4pancakes.bsky.social' does not exist, but her
+    Mastodon profile metadata names 'hacks4pancakes.com'. Reading the profile
+    finds real custom-domain handles that no naming convention would predict.
+    """
+    try:
+        a = get_json(f"https://{instance}/api/v1/accounts/lookup?acct={acct}")
+        a = get_json(f"https://{instance}/api/v1/accounts/{a['id']}") or a
+    except Exception:
+        return []
+    blob = (a.get("note") or "") + " " + " ".join(
+        f"{f.get('name','')} {f.get('value','')}" for f in (a.get("fields") or []))
+    found = []
+    for m in BSKY_URL_RE.findall(blob):
+        h = m.strip().rstrip("/.,;")
+        if h and h not in found:
+            found.append(h)
+    return found
+
+
 def check_bluesky(handle):
     """Resolve handle -> DID, then fetch the profile for identity signals."""
     try:
@@ -140,6 +165,18 @@ def main():
             else:
                 unknown.append((name, "mastodon", f"@{acct}@{inst}", r.get("err", "?")))
 
+        # Cross-platform discovery: read the Mastodon profile rather than guessing
+        # the Bluesky handle (custom domains are unpredictable).
+        seen_bs = {h[1] for h in hits if h[0] == "bluesky"}
+        for inst, acct in (c.get("mastodon", []) or []):
+            for hh in discover_bluesky(inst, acct):
+                if hh in seen_bs:
+                    continue
+                rr = check_bluesky(hh)
+                if rr["ok"]:
+                    hits.append(("discovered", rr["handle"], rr))
+                    seen_bs.add(rr["handle"])
+
         if hits:
             graded = sorted(hits, key=lambda h: -(h[2]["followers"] or 0))
             print(f"  ✓ {name}  ({role})")
@@ -151,7 +188,7 @@ def main():
                 if r.get("bio"):
                     print(f"                bio: {r['bio']}")
                 if v == "OK":
-                    if plat == "bluesky":
+                    if plat in ("bluesky", "discovered"):
                         verified["bluesky"].append(handle)
                     else:
                         verified["mastodon"].append({"instance": r["acct"].split("@")[-1],

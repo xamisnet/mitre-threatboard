@@ -271,19 +271,24 @@ def match_signals(signals, items):
                 hit |= by_cve[c]
                 why = f"CVE {c}"
         if not hit:
-            # Keyword fallback needs 3 distinct shared words: 2 was letting a
-            # single generic term ("customers") attach unrelated stories.
+            # Keyword fallback needs 3 distinct shared words, and attaches to the
+            # single BEST-matching item only. Attaching to every item that clears
+            # the bar let one generic "CISA KEV roundup" post spray across four
+            # unrelated items.
             words = set(re.findall(r"[a-z0-9]{5,}", s["x"].lower()))
+            best_iid, best_common = None, set()
             for iid, kw in by_kw.items():
                 common = words & kw
-                if len(common) >= 3:
-                    hit.add(iid)
-                    why = why or ("kw: " + ", ".join(sorted(common)[:4]))
+                if len(common) > len(best_common):
+                    best_iid, best_common = iid, common
+            if best_iid and len(best_common) >= 3:
+                hit.add(best_iid)
+                why = "kw: " + ", ".join(sorted(best_common)[:4])
         if hit:
             used += 1
             for iid in hit:
                 out.setdefault(iid, []).append(s)
-                reasons.setdefault(iid, why)
+                reasons[iid] = why
     for k in out:
         out[k].sort(key=lambda s: (s["e"], s["t"]), reverse=True)
         out[k] = out[k][:8]
