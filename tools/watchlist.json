@@ -3,6 +3,24 @@
   "_verified_on": "2026-11-21",
   "_note_no_x": "X needs a paid bearer token; finder reports unavailable rather than faking it.",
 
+  "_manual_overrides": [
+    {
+      "handle": "lawrenceabrams.bsky.social",
+      "platform": "bluesky",
+      "verifier_grade": "UNCONFIRMED",
+      "why_included": "Display name 'Lawrence Abrams' plus bio 'Owner, Editor in Chief of BleepingComputer.com'. Only 382 followers, so it misses the 1000-follower auto-OK bar, but the identity evidence is unambiguous. Confirmed by a human, not by the heuristic.",
+      "counterpart": "lawrenceabrams@infosec.exchange (1,190 followers, graded OK)"
+    },
+    {
+      "handle": "SwiftOnSecurity@infosec.exchange",
+      "platform": "mastodon",
+      "verifier_grade": "NO-NAME",
+      "why_included": "93,158 followers but no display name set, so there is nothing for the name-match check to corroborate. Bio links an official statement of ownership from the @swiftonsecurity Twitter account. Confirmed by a human.",
+      "counterpart": null
+    }
+  ],
+  "_override_note": "tools/verify-handles.py will keep grading these two UNCONFIRMED / NO-NAME on every run. That is expected, not a regression — the heuristic has no way to accept a human's judgement, and pretending otherwise would hide the fact that two entries rest on a manual call.",
+
   "bluesky_accounts": [
     "lorenzofb.bsky.social",
     "zackwhittaker.com",
