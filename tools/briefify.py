@@ -150,6 +150,9 @@ def main():
     if start not in html or end not in html:
         sys.exit("FAIL: index.html missing BRIEF block anchors - run the setup patch first")
     i = html.index(start)
+    # Anchor at the start of the line so our block's own indentation is
+    # deterministic (prior runs must not accumulate leading whitespace).
+    i = html.rfind("\n", 0, i) + 1
     j = html.index(end, i)
     block = (
         '  const BRIEF_DATE="' + brief_date + '";    // as-at date, refreshed daily by tools/briefify.py\n'
@@ -159,7 +162,10 @@ def main():
     )
     html2 = html[:i] + block + html[j:]
     if html2 == html:
-        sys.exit("FAIL: no change - check BRIEF declarations exist")
+        # Already up to date (e.g. a re-run on the same date) — graceful no-op,
+        # NOT an error. daily.sh's git diff check handles the real no-op case.
+        print(f"OK: brief for {brief_date} already current (no change to index.html)")
+        return
 
     INDEX.write_text(html2)
     r = subprocess.run(["node", "tools/validate.mjs"], cwd=ROOT,
