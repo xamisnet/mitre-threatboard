@@ -45,17 +45,33 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           BRANCH="refresh/signals-$(date -u +%Y%m%d)"
-          git checkout -b "$BRANCH"
-          git add -A
-          git commit -m "chore: refresh social signals ($(date -u +%Y-%m-%d))"
-          git push -u origin "$BRANCH"
-          gh pr create \
-            --base main --head "$BRANCH" \
-            --title "chore: refresh social signals ($(date -u +%Y-%m-%d))" \
-            --body "Automated signal refresh from Bluesky, Mastodon and X.
+          # Re-entrant: this workflow may already have run today (a scheduled run
+          # plus a manual dispatch). If the date-branch already exists upstream,
+          # update it in place rather than colliding with a non-fast-forward push.
+          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+            git checkout -b "$BRANCH"
+            git add -A
+            git commit -m "chore: refresh social signals ($(date -u +%Y-%m-%d))" || \
+              git commit --allow-empty -m "chore: refresh social signals ($(date -u +%Y-%m-%d))"
+            git fetch origin "$BRANCH" 2>/dev/null || true
+            git push --force-with-lease origin "$BRANCH"
+          else
+            git checkout -b "$BRANCH"
+            git add -A
+            git commit --allow-empty -m "chore: refresh social signals ($(date -u +%Y-%m-%d))"
+            git push -u origin "$BRANCH"
+          fi
+          # Only open a PR if one is not already open for this head branch,
+          # so a re-entry can never fail trying to create a duplicate.
+          if ! gh pr list --state open --head "$BRANCH" --json number --jq 'length > 0' 2>/dev/null | grep -q true; then
+            gh pr create \
+              --base main --head "$BRANCH" \
+              --title "chore: refresh social signals ($(date -u +%Y-%m-%d))" \
+              --body "Automated signal refresh from Bluesky, Mastodon and X.
 
           \`ITEMS\` are untouched — this only rebuilds the \`SIGNALS\` block and
           writes \`data/new-kev.json\` with KEV entries not yet covered.
 
           Review \`git diff\` before merging: check that the matched signals
           actually belong to the items they were attached to."
+          fi
