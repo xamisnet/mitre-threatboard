@@ -55,4 +55,4 @@ if [ "$PUSH_ST" -ne 0 ]; then
   exit "$PUSH_ST"
 fi
 
-echo "threatboard: delivered daily ITEMS for $DATE (commit $(git rev-parse --short HEAD))"
+echo "threatboard: delivered for $DATE (commit $(git rev-parse --short HEAD)) — items $(jq 'length' "data/items/${DATE}.json" 2>/dev/null || echo '?'), brief $([ -f "data/briefs/${DATE}.md" ] && echo yes || echo no)"
