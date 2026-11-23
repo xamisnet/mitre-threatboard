@@ -18,7 +18,23 @@ if [ "$STATUS" -ne 0 ]; then
   exit "$STATUS"
 fi
 
+# Auto-brief: if a narrated brief for this date exists, render the prose into
+# index.html's Brief tab before staging/commit.
+if [ -f "data/briefs/${DATE}.md" ]; then
+  python3 tools/briefify.py "data/items/${DATE}.json" "data/briefs/${DATE}.md"
+  STATUS=$?
+  if [ "$STATUS" -ne 0 ]; then
+    echo "threatboard: briefify step is still authoritative — bailing for $DATE"
+    exit "$STATUS"
+  fi
+else
+  echo "threatboard: no data/briefs/${DATE}.md — Brief tab keeps prior prose (items still refreshed)"
+fi
+
 git add index.html "data/items/${DATE}.json"
+if [ -f "data/briefs/${DATE}.md" ]; then
+  git add "data/briefs/${DATE}.md"
+fi
 if git diff --cached --quiet; then
   echo "threatboard: no diff for $DATE — nothing to push"
   exit 0
