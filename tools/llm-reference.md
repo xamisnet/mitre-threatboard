@@ -1,0 +1,145 @@
+# Threatboard LLM reference — VALID ids only
+
+## Severity enum (`sev`)
+crit, high, med
+
+## Category enum (`cat`)
+breach, ics, nation, patch, ransom, trend, vuln
+
+## Tactics
+- `TA0043` Reconnaissance
+- `TA0042` Resource Development
+- `TA0001` Initial Access
+- `TA0002` Execution
+- `TA0003` Persistence
+- `TA0004` Privilege Escalation
+- `TA0005` Defense Evasion
+- `TA0006` Credential Access
+- `TA0007` Discovery
+- `TA0008` Lateral Movement
+- `TA0009` Collection
+- `TA0011` Command and Control
+- `TA0010` Exfiltration
+- `TA0040` Impact
+
+## Techniques (`tch` — pick ids from HERE only, id -> name -> tactic)
+- `T1595` TA0043  [Active Scanning]
+- `T1595.002` TA0043  [Vulnerability Scanning]
+- `T1596.005` TA0043  [Scan Databases]
+- `T1588` TA0042  [Obtain Capabilities]
+- `T1588.002` TA0042  [Obtain Capabilities: Tool]
+- `T1587` TA0042  [Develop Capabilities]
+- `T1190` TA0001  [Exploit Public-Facing Application]
+- `T1133` TA0001  [External Remote Services]
+- `T1566` TA0001  [Phishing]
+- `T1566.002` TA0001  [Spearphishing Link]
+- `T1078` TA0001  [Valid Accounts]
+- `T1078.001` TA0001  [Default Accounts]
+- `T1078.004` TA0001  [Cloud Accounts]
+- `T1199` TA0001  [Trusted Relationship]
+- `T1195` TA0001  [Supply Chain Compromise]
+- `T1059` TA0002  [Command and Scripting Interpreter]
+- `T1059.006` TA0002  [Python]
+- `T1059.001` TA0002  [PowerShell]
+- `T1203` TA0002  [Exploitation for Client Execution]
+- `T1204` TA0002  [User Execution]
+- `T1053` TA0002  [Scheduled Task/Job]
+- `T1072` TA0002  [Software Deployment Tools]
+- `T1136` TA0003  [Create Account]
+- `T1505.003` TA0003  [Web Shell]
+- `T1098` TA0003  [Account Manipulation]
+- `T1543` TA0003  [Create or Modify System Process]
+- `T1547` TA0003  [Boot or Logon Autostart Execution]
+- `T1068` TA0004  [Exploitation for Privilege Escalation]
+- `T1548` TA0004  [Abuse Elevation Control Mechanism]
+- `T1611` TA0004  [Escape to Host]
+- `T1610` TA0004  [Deploy Container]
+- `T1036` TA0005  [Masquerading]
+- `T1070` TA0005  [Indicator Removal]
+- `T1562` TA0005  [Impair Defenses]
+- `T1218` TA0005  [System Binary Proxy Execution]
+- `T1550` TA0005  [Use Alternate Authentication Material]
+- `T1620` TA0005  [Reflective Code Loading]
+- `T1606` TA0006  [Forge Web Credentials]
+- `T1606.002` TA0006  [Forge Web Credentials: SAML Tokens]
+- `T1552` TA0006  [Unsecured Credentials]
+- `T1552.001` TA0006  [Credentials In Files]
+- `T1555` TA0006  [Credentials from Password Stores]
+- `T1003` TA0006  [OS Credential Dumping]
+- `T1110` TA0006  [Brute Force]
+- `T1087` TA0007  [Account Discovery]
+- `T1046` TA0007  [Network Service Discovery]
+- `T1018` TA0007  [Remote System Discovery]
+- `T1082` TA0007  [System Information Discovery]
+- `T1083` TA0007  [File and Directory Discovery]
+- `T1021` TA0008  [Remote Services]
+- `T1021.002` TA0008  [SMB / Admin Shares]
+- `T1021.001` TA0008  [RDP]
+- `T1021.004` TA0008  [SSH]
+- `T1550.001` TA0008  [Application Access Token]
+- `T1213` TA0009  [Data from Information Repositories]
+- `T1213.002` TA0009  [SharePoint / Confluence]
+- `T1213.003` TA0009  [Code Repositories]
+- `T1005` TA0009  [Data from Local System]
+- `T1114` TA0009  [Email Collection]
+- `T1119` TA0009  [Automated Collection]
+- `T1071` TA0011  [Application Layer Protocol]
+- `T1219` TA0011  [Remote Access Software]
+- `T1105` TA0011  [Ingress Tool Transfer]
+- `T1090` TA0011  [Proxy]
+- `T1567` TA0010  [Exfiltration Over Web Service]
+- `T1041` TA0010  [Exfiltration Over C2 Channel]
+- `T1048` TA0010  [Exfiltration Over Alt. Protocol]
+- `T1530` TA0010  [Data from Cloud Storage]
+- `T1486` TA0040  [Data Encrypted for Impact]
+- `T1489` TA0040  [Service Stop]
+- `T1490` TA0040  [Inhibit System Recovery]
+- `T1498` TA0040  [Network Denial of Service]
+- `T1499` TA0040  [Endpoint Denial of Service]
+- `T1565` TA0040  [Data Manipulation]
+- `T1565.001` TA0040  [Stored Data Manipulation]
+- `T1657` TA0040  [Financial Theft]
+- `T0831` TA0040  [Manipulation of Control (ICS)]
+- `T0836` TA0040  [Modify Parameter (ICS)]
+- `T0813` TA0040  [Denial of Control (ICS)]
+- `T0826` TA0040  [Loss of Availability (ICS)]
+
+## Mitigations (`ctl` — cite M#### ids from HERE only)
+- `M1015` Active Directory Configuration
+- `M1016` Vulnerability Scanning
+- `M1017` User Training
+- `M1018` User Account Management
+- `M1019` Threat Intelligence Program
+- `M1021` Restrict Web-Based Content
+- `M1022` Restrict File & Directory Permissions
+- `M1026` Privileged Account Management
+- `M1027` Password Policies
+- `M1029` Remote Data Storage
+- `M1030` Network Segmentation
+- `M1031` Network Intrusion Prevention
+- `M1032` Multi-factor Authentication
+- `M1033` Limit Software Installation
+- `M1035` Limit Access to Resource Over Network
+- `M1036` Account Use Policies
+- `M1037` Filter Network Traffic
+- `M1038` Execution Prevention
+- `M1040` Behavior Prevention on Endpoint
+- `M1041` Encrypt Sensitive Information
+- `M1042` Disable or Remove Feature or Program
+- `M1043` Credential Access Protection
+- `M1044` Restrict Library Loading
+- `M1045` Code Signing
+- `M1047` Audit
+- `M1048` Application Isolation and Sandboxing
+- `M1050` Exploit Protection
+- `M1051` Update Software
+- `M1052` User Account Control
+- `M1053` Data Backup
+- `M1054` Software Configuration
+- `M1056` Pre-compromise
+- `M1057` Data Loss Prevention
+- `M0800` Least Privilege
+- `M0801` Restrict Network Access
+- `M0804` Human User Authentication
+- `M0810` Network Allowlists
+- `M0953` Data Backup
