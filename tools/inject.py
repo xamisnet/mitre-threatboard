@@ -97,6 +97,8 @@ def main():
         sys.exit(1)
 
     new_block = emit_block(items)
+    date = path.stem
+    stamp = f"News scan: {date} 05:00 AEDT"
     html = INDEX.read_text()
     items_start = html.index("const ITEMS=[")
     begin_anchor = html.index("/* === SIGNALS:BEGIN")
@@ -109,9 +111,17 @@ def main():
     middle = new_block + "\n"
     sig_markers = html[begin_anchor:signals_decl]   # BEGIN comment + date line
     suffix = html[signals_end:]
+    # Stamp the header ticker with the deterministic news-scan time (not a live
+    # wall-clock) and remove the ticking interval so the page is byte-stable.
+    suffix = suffix.replace('function tick(){document.getElementById("clock").textContent=new Date().toISOString().replace("T"," ").slice(0,19)+"Z";}\n',
+                            "")
+    suffix = suffix.replace("tick();setInterval(tick,1000);\n", "")
 
-    INDEX.write_text(prefix + middle + sig_markers +
-                     "const SIGNALS={};\n" + suffix)
+    final = prefix + middle + sig_markers + "const SIGNALS={};\n" + suffix
+    final = final.replace('<span class="tag" id="clock">—</span>',
+                          '                <span class="tag" id="clock">' + stamp + '</span>')
+    # Only write after replacing both the block and the clock.
+    INDEX.write_text(final)
     r = subprocess.run(["node", "tools/validate.mjs"], cwd=ROOT,
                        capture_output=True, text=True)
     print(r.stdout)
