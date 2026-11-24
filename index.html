@@ -207,7 +207,7 @@
     </div>
     <div class="grow"></div>
     <input type="search" id="q" placeholder="search items, CVEs, techniques…"/>
-    <span class="tag" id="clock">—</span>
+                    <span class="tag" id="clock">News scan: 2026-11-25 05:00 AEDT</span>
   </div>
   <nav>
     <button data-v="matrix" class="on">Attack Matrix</button>
@@ -465,113 +465,95 @@ const MIT={
 /* sev: crit|high|med|info ; cat: vuln|breach|ransom|nation|ics|trend|patch */
 const ITEMS=[
 {
- id:"n01",d:"2026-11-24",sev:"crit",cat:"vuln",kev:0,wild:1,
- title:"CHAINDROP worm backdoors 400+ npm packages via hijacked keyv maintainer",
- src:"Wiz",
- url:"https://www.wiz.io/blog/keyv-and-cacheable-npm-supply-chain-attack",
- tch:["T1195", "T1059", "T1552", "T1567"],
- sum:"Hijacked keyv maintainer account backdoored 400+ npm packages (keyv, cacheable-request, flat-cache); setup.mjs dropper exfiltrates credentials and self-propagates across 1.3B monthly downloads.",
- act:["keyv/cacheable-request/cache-manager users", "npm build hosts"],
- ctl:["M1045 Code Signing \u2014 pin known-good versions", "M1033 Limit Software Installation \u2014 audit lockfiles for keyv/cacheable-request", "M1043 Credential Access Protection \u2014 rotate creds on affected build hosts"]},
+ id:"n01",d:"2026-11-25",sev:"crit",cat:"patch",kev:1,wild:1,
+ title:"CISA KEV adds Cisco BroadWorks XXE & Openwave Webtop",
+ src:"CISA",
+ url:"https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+ tch:["T1190", "T1213", "T1059"],
+ sum:"CISA added two new known-exploited entries: Cisco BroadWorks XXE (actively exploited) and an Openwave Webtop resource-transfer flaw, with an immediate federal patching deadline.",
+ act:["Cisco BroadWorks users", "Openwave Webtop users", "US federal agencies"],
+ ctl:["M1051 Update Software \u2014 patch now", "M1016 Vulnerability Scanning", "M1050 Exploit Protection"]},
 {
- id:"n02",d:"2026-11-24",sev:"crit",cat:"vuln",kev:1,wild:1,
- title:"Microsoft Outlook NTLM-leak zero-day (CVE-2026-124194) exploited in the wild",
- src:"Microsoft",
- url:"https://www.socprime.com/blog/cve-2026-124194",
- tch:["T1566", "T1203", "T1550", "T1003"],
- sum:"Crafted message file makes Outlook connect to an attacker server and leak an NTLMv2 hash, enabling credential theft and lateral movement; actively exploited, CISA due date Nov 24.",
- act:["M365 Apps for Enterprise", "Office LTSC 2021/2024"],
- ctl:["M1051 Update Software \u2014 apply Nov 10 Office update now", "M1037 Filter Network Traffic \u2014 block outbound SMB 139/445", "M1017 User Training \u2014 caution on unsolicited message files"]},
+ id:"n02",d:"2026-11-25",sev:"crit",cat:"patch",kev:0,wild:1,
+ title:"Microsoft Outlook zero-day steals NTLMv2 hashes",
+ src:"SOC Prime",
+ url:"https://socprime.com/blog/cve-2026-124194-microsoft-outlook-zero-day-exploited-to-steal-ntlm-hashes/",
+ tch:["T1566", "T1204", "T1550"],
+ sum:"Actively exploited Outlook zero-day delivers crafted email files to steal NTLMv2 hashes. Patch per CVE-2026-124194 before the Nov 24 deadline.",
+ act:["Microsoft Outlook users"],
+ ctl:["M1051 Update Software \u2014 patch now", "M1043 Credential Access Protection", "M1021 Restrict Web-Based Content"]},
 {
- id:"n03",d:"2026-11-24",sev:"crit",cat:"vuln",kev:1,wild:1,
- title:"Cisco Expressway hardcoded credentials (CVE-2026-76466) exploited",
- src:"Cisco",
- url:"https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-vcs-static-cred-hr7EWZ8t",
- tch:["T1190", "T1078.001", "T1068"],
- sum:"Hardcoded credentials give unauthenticated remote root on Cisco Expressway; added to KEV Nov 23 after attackers breached four devices at a Russian organization.",
- act:["Cisco Expressway Series", "collaboration-edge deployments"],
- ctl:["M1051 Update Software \u2014 apply Cisco advisory fix", "M1018 User Account Management \u2014 remove hardcoded credentials", "M1047 Audit \u2014 check Erlang logs for exploitation signs"]},
+ id:"n03",d:"2026-11-25",sev:"high",cat:"breach",kev:0,wild:0,
+ title:"SitusAMC breach exposes major US bank data",
+ src:"TechCrunch",
+ url:"https://techcrunch.com/2025/11/24/us-banks-scramble-to-assess-data-theft-after-hackers-breach-financial-tech-firm/",
+ tch:["T1190", "T1213", "T1567"],
+ sum:"Attackers breached fintech SitusAMC on Nov 12, stealing corporate, accounting and legal records. JPMorgan, Citi and Morgan Stanley assess customer exposure; no encryption used.",
+ act:["SitusAMC", "JPMorgan Chase", "Citigroup"],
+ ctl:["M1057 Data Loss Prevention", "M1026 Privileged Account Management", "M1019 Threat Intelligence Program"]},
 {
- id:"n04",d:"2026-11-24",sev:"crit",cat:"vuln",kev:1,wild:1,
- title:"Apache Roller deserialization RCE (CVE-2026-129448) actively exploited",
- src:"Phoenix Security",
- url:"https://www.socprime.com/blog/cve-2026-129448",
- tch:["T1190", "T1059", "T1068"],
- sum:"Pre-auth Java deserialization in XML-RPC gives code execution as the app server; public PoC since Sep, KEV Nov 20, active exploitation, affects Roller 4.0.0-6.1.5.",
- act:["Apache Roller 4.0.0-6.1.5"],
- ctl:["M1051 Update Software \u2014 upgrade to Roller 6.1.6+", "M1037 Filter Network Traffic \u2014 block /roller-services/xmlrpc at WAF", "M1042 Disable or Remove Feature or Program \u2014 disable XML-RPC if unused"]},
+ id:"n04",d:"2026-11-25",sev:"high",cat:"breach",kev:0,wild:0,
+ title:"Radware breach leaks customer cloud access keys",
+ src:"BleepingComputer",
+ url:"https://www.bleepingcomputer.com/news/security/radware-discloses-breach-exposing-customer-cloud-access-keys/",
+ tch:["T1190", "T1552", "T1078.004"],
+ sum:"Attackers hit an unauthenticated Cloud WAF management API on Nov 19, exfiltrating customer details and cloud access keys from 12,500+ enterprise carriers. Radware rotated credentials.",
+ act:["Radware", "Radware cloud WAF customers"],
+ ctl:["M1026 Privileged Account Management \u2014 rotate keys", "M1032 Multi-factor Authentication", "M1043 Credential Access Protection"]},
 {
- id:"n05",d:"2026-11-24",sev:"high",cat:"vuln",kev:0,wild:0,
- title:"TanStack npm compromise: 42 packages shipped with valid SLSA provenance",
- src:"TanStack",
- url:"https://tanstack.com/blog/npm-supply-chain-compromise-postmortem",
- tch:["T1195", "T1072", "T1550.001", "T1059"],
- sum:"CI pipeline hijack published 42 malicious @tanstack packages across 84 versions, bearing valid OIDC/SLSA provenance — signed packages can no longer be blindly trusted.",
- act:["@tanstack/* npm users", "CI/CD platforms"],
- ctl:["M1045 Code Signing \u2014 verify provenance, don't trust blindly", "M1033 Limit Software Installation \u2014 audit @tanstack/* lockfile versions", "M1047 Audit \u2014 treat matching 1.161.9/12 versions as compromised"]},
+ id:"n05",d:"2026-11-25",sev:"high",cat:"vuln",kev:0,wild:1,
+ title:"Check Point management servers breached in 22 orgs",
+ src:"BleepingComputer",
+ url:"https://www.bleepingcomputer.com/news/security/hackers-compromise-check-point-servers-in-22-organizations/",
+ tch:["T1190", "T1133", "T1562"],
+ sum:"GreyNoise-tracked campaign GT13 exploits multiple vulns to compromise Check Point security management servers across 22 orgs, holding persistent access since Oct 17.",
+ act:["Check Point", "22 organizations"],
+ ctl:["M1051 Update Software", "M1047 Audit", "M1030 Network Segmentation"]},
 {
- id:"n06",d:"2026-11-24",sev:"high",cat:"vuln",kev:1,wild:1,
- title:"FreeSWITCH SIP code injection (CVE-2026-116779) used in ransomware",
- src:"SignalWire",
- url:"https://github.com/signalwire/freeswitch/security/advisories/GHSA-mg63-h38w-8p9p",
- tch:["T1190", "T1059", "T1068"],
- sum:"Inbound SIP MESSAGE can invoke FreeSWITCH API commands as root; CISA KEV added and seen in ransomware campaigns against a widely deployed telephony platform.",
- act:["FreeSWITCH", "telephony service providers"],
- ctl:["M1051 Update Software \u2014 apply FreeSWITCH fix", "M1037 Filter Network Traffic \u2014 restrict inbound SIP to trusted peers", "M1030 Network Segmentation \u2014 isolate telephony plane"]},
+ id:"n06",d:"2026-11-25",sev:"high",cat:"vuln",kev:0,wild:1,
+ title:"GL.iNet cloud flaw exploited to infect routers",
+ src:"BleepingComputer",
+ url:"https://www.bleepingcomputer.com/news/security/hackers-exploit-glinet-cloud-flaw-to-infect-routers-kvm-devices/",
+ tch:["T1190", "T1105", "T1133"],
+ sum:"Actively exploited GL.iNet cloud remote-management flaw lets attackers drop custom malware, backdoors and reverse shells on routers and KVM devices.",
+ act:["GL.iNet users"],
+ ctl:["M1051 Update Software", "M1042 Disable or Remove Feature or Program \u2014 disable cloud mgmt", "M1037 Filter Network Traffic"]},
 {
- id:"n07",d:"2026-11-24",sev:"high",cat:"vuln",kev:1,wild:1,
- title:"Cisco BroadWorks XXE (CVE-2026-20320) actively exploited",
- src:"Cisco",
- url:"https://sec.cloudapps.cisco.com",
- tch:["T1190", "T1213", "T1005"],
- sum:"XXE in Cisco BroadWorks is under active exploitation; CISA due date Nov 24. Patch per Cisco advisory.",
- act:["Cisco BroadWorks"],
- ctl:["M1051 Update Software \u2014 patch per Cisco advisory", "M1016 Vulnerability Scanning \u2014 confirm exposure", "M1047 Audit \u2014 review access logs"]},
+ id:"n07",d:"2026-11-25",sev:"high",cat:"breach",kev:0,wild:0,
+ title:"Cleverbridge breach steals card numbers & CVVs",
+ src:"BleepingComputer",
+ url:"https://www.bleepingcomputer.com/news/security/cleverbridge-warns-hackers-stole-credit-card-numbers-cvvs-in-data-breach/",
+ tch:["T1005", "T1119", "T1567"],
+ sum:"E-commerce platform Cleverbridge confirmed payment card numbers and CVVs were stolen, with broad impact possible across its SaaS/software client base.",
+ act:["Cleverbridge", "Cleverbridge customers"],
+ ctl:["M1041 Encrypt Sensitive Information", "M1027 Password Policies", "M1057 Data Loss Prevention"]},
 {
- id:"n08",d:"2026-11-24",sev:"high",cat:"vuln",kev:1,wild:1,
- title:"UnrealIRCd delimiter neutralization (CVE-2026-114713) on KEV",
- src:"UnrealIRCd",
- url:"https://forums.unrealircd.org",
- tch:["T1190", "T1059", "T1068"],
- sum:"Delimiter neutralization in UnrealIRCd added to CISA KEV Nov 13; upgrade to remediate.",
- act:["UnrealIRCd"],
- ctl:["M1051 Update Software \u2014 upgrade UnrealIRCd", "M1037 Filter Network Traffic \u2014 restrict inbound IRC"]},
+ id:"n08",d:"2026-11-25",sev:"med",cat:"breach",kev:0,wild:0,
+ title:"EU Academy data theft confirmed",
+ src:"BleepingComputer",
+ url:"https://www.bleepingcomputer.com/news/security/european-commission-confirms-data-theft-in-eu-academy-breach/",
+ tch:["T1190", "T1588", "T1213"],
+ sum:"Attackers used the ARTeX pen-testing framework to breach the EU Academy learning hub, stealing personal data and disrupting the Sysper HR platform.",
+ act:["EU Academy", "EU Academy users"],
+ ctl:["M1051 Update Software", "M1027 Password Policies \u2014 review credential reuse", "M1016 Vulnerability Scanning"]},
 {
- id:"n09",d:"2026-11-24",sev:"high",cat:"ransom",kev:0,wild:1,
- title:"Vanderbilt University ransomware: 1M+ SSNs allegedly exfiltrated",
- src:"Inside Higher Ed",
- url:"https://www.insidehighered.com",
- tch:["T1486", "T1005", "T1567", "T1021"],
- sum:"BYOD ransomware group claimed an attack on Vanderbilt, allegedly exfiltrating 1M+ SSNs; university took campus WiFi, Okta and Brightspace offline. Ongoing.",
- act:["Vanderbilt University", "students and staff"],
- ctl:["M1053 Data Backup \u2014 ensure recoverable backups", "M1030 Network Segmentation \u2014 isolate BYOD from critical systems", "M1026 Privileged Account Management \u2014 protect Okta/admin access"]},
+ id:"n09",d:"2026-11-25",sev:"med",cat:"breach",kev:0,wild:0,
+ title:"McDonald's Japan customer database breach",
+ src:"BleepingComputer",
+ url:"https://www.bleepingcomputer.com/news/security/mcdonalds-japan-data-breach-exposes-customer-location-information/",
+ tch:["T1190", "T1213", "T1048"],
+ sum:"Customer database accessed exposing purchase history, IP addresses and location data; no names, emails or payment info taken.",
+ act:["McDonald's Japan", "McDonald's Japan customers"],
+ ctl:["M1057 Data Loss Prevention", "M1018 User Account Management", "M1041 Encrypt Sensitive Information"]},
 {
- id:"n10",d:"2026-11-24",sev:"med",cat:"trend",kev:0,wild:0,
- title:"AI-assisted fraud triggers unauthorized payments at Indian banks",
- src:"The Hacker News",
- url:"https://thehackernews.com",
- tch:["T1657", "T1078", "T1588.002"],
- sum:"Attackers used AI to trigger unauthorized payments at multiple Indian financial institutions, an emerging TTP that bypasses traditional transaction monitoring.",
- act:["Indian banks", "fintech firms"],
- ctl:["M1032 Multi-factor Authentication \u2014 step-up auth on high-value transfers", "M1047 Audit \u2014 strengthen transaction monitoring for AI-driven patterns", "M1036 Account Use Policies \u2014 restrict unusual payment flows"]},
-{
- id:"n11",d:"2026-11-24",sev:"med",cat:"vuln",kev:0,wild:0,
- title:"Ivanti EPM pre-auth SQLi RCE (CVE-2026-121653) to watch",
- src:"Ivanti",
- url:"https://hub.ivanti.com",
- tch:["T1190", "T1059", "T1213"],
- sum:"CVSS 9.8 pre-auth RCE in Ivanti Endpoint Manager Core via SQLi, patched in Nov 2026; no confirmed exploitation yet but PoC likely.",
- act:["Ivanti Endpoint Manager"],
- ctl:["M1051 Update Software \u2014 apply Ivanti EPM 2024 SU8", "M1016 Vulnerability Scanning \u2014 confirm exposure", "M1035 Limit Access to Resource Over Network \u2014 restrict Core access"]},
-{
- id:"n12",d:"2026-11-24",sev:"med",cat:"vuln",kev:0,wild:0,
- title:"Windows AD DS RCE/EoP (CVE-2026-118146/118148) flagged likely-exploited",
- src:"CrowdStrike",
- url:"https://www.crowdstrike.com",
- tch:["T1068", "T1098", "T1078"],
- sum:"Active Directory Domain Services RCE and elevation flaws rated 'Exploitation More Likely' by Microsoft; not yet confirmed exploited but AD is a prime target.",
- act:["Windows Server AD DS", "domain controllers"],
- ctl:["M1051 Update Software \u2014 apply November Patch Tuesday", "M1015 Active Directory Configuration \u2014 harden AD DS", "M1026 Privileged Account Management \u2014 protect domain admins"]},
+ id:"n10",d:"2026-11-25",sev:"med",cat:"trend",kev:0,wild:0,
+ title:"ShinyHunters resurfaces with historic PGP keys",
+ src:"BleepingComputer",
+ url:"https://www.bleepingcomputer.com/news/security/shinyhunters-resurfaces-after-fbi-arrests-uses-old-pgp-keys-as-proof/",
+ tch:["T1588", "T1213", "T1567"],
+ sum:"ShinyHunters posted on a new Tor leak site signed with 2020-era PGP keys, suggesting the real group's infrastructure survived the FBI arrests. Watch for new leaks.",
+ act:["ShinyHunters"],
+ ctl:["M1019 Threat Intelligence Program", "M1057 Data Loss Prevention", "M1032 Multi-factor Authentication"]},
 ];
 
 /* === SIGNALS:BEGIN — regenerated by tools/fetch.py, do not hand-edit ===
@@ -924,8 +906,8 @@ function renderBrief(){
   const topTech=Object.entries(tt).sort((a,b)=>b[1]-a[1]).slice(0,10);
   const tacCount={};items.forEach(it=>new Set(it.tch.map(techTactic).filter(Boolean)).forEach(t=>tacCount[t]=(tacCount[t]||0)+1));
   const topTac=Object.entries(tacCount).sort((a,b)=>b[1]-a[1]).slice(0,6);
-  const BRIEF_DATE="2026-11-24";    // as-at date, refreshed daily by tools/briefify.py
-  const BRIEF_HTML="<p>News scan: 2026-11-24 05:00 AEDT</p>\n<h3>1. Supply chain: the trust model for signed packages just broke</h3>\n<p>Two supply-chain events dominate the window. <strong>n01 (critical)</strong> — the CHAINDROP worm hijacked the keyv maintainer account to backdoor 400+ npm packages (keyv, cacheable-request, flat-cache); a <code>setup.mjs</code> dropper exfiltrates credentials and self-propagates across ~1.3B monthly downloads. <strong>n05 (high)</strong> — TanStack's CI pipeline was hijacked to publish 42 malicious <code>@tanstack/*</code> packages carrying valid OIDC/SLSA provenance, the first documented case where signed packages can't be blindly trusted. Both land on <strong>M1045 Code Signing</strong> (verify provenance, don't assume) and <strong>M1033 Limit Software Installation</strong> (audit your lockfiles now), plus <strong>M1043</strong> to rotate build-host credentials.</p>\n<h3>2. KEV is live this morning — patch the exploited apps today</h3>\n<p><strong>n02 (critical)</strong> — Outlook NTLM-leak zero-day (CVE-2026-124194) is the only confirmed exploited bug in November Patch Tuesday and is due today: block outbound SMB 139/445 (<strong>M1037</strong>) in parallel with patching. Alongside it, five more known-exploited vulns: <strong>n03</strong> Cisco Expressway hardcoded credentials (already breached four devices at a Russian org), <strong>n04</strong> Apache Roller deserialization RCE (CVSS 9.8, active), <strong>n06</strong> FreeSWITCH SIP injection (used in ransomware), <strong>n07</strong> Cisco BroadWorks XXE (active, due today), and <strong>n08</strong> UnrealIRCd. There is no compensating control for a confirmed exploited RCE — all resolve to <strong>M1051 Update Software — patch now</strong>.</p>\n<h3>3. Breaches, fraud, and what is still watching</h3>\n<p><strong>n09 (high)</strong> — Vanderbilt University ransomware: 1M+ SSNs allegedly exfiltrated and campus WiFi, Okta and Brightspace taken offline; segment BYOD (<strong>M1030</strong>) and keep verified backups (<strong>M1053</strong>). <strong>n10 (med)</strong> — AI-assisted fraud at Indian banks and fintech is an emerging TTP that bypasses transaction monitoring, so tighten <strong>M1047 Audit</strong> and step-up auth. Still unconfirmed but patch-worthy: <strong>n11</strong> Ivanti Endpoint Manager pre-auth RCE (CVSS 9.8) and <strong>n12</strong> Windows AD DS RCE/EoP (\"Exploitation More Likely\") — both resolve to <strong>M1051 Update Software</strong> despite no confirmed wild exploitation yet.</p>\n<h3>4. Priority order (how to read the controls table below)</h3>\n<ol>\n<li><strong>M1051 Update Software</strong> — six KEV/actively-exploited vulns (n02, n03, n04, n06, n07, n08) plus two watching items (n11, n12) all resolve to \"patch this week\".</li>\n<li><strong>M1045 Code Signing</strong> — the CHAINDROP and TanStack supply-chain break (n01, n05) is exactly what signature/provenance verification, not updates alone, is for.</li>\n<li><strong>M1033 Limit Software Installation</strong> — audit npm lockfiles for keyv/cacheable-request and @tanstack/* versions (n01, n05).</li>\n<li><strong>M1030 Network Segmentation</strong> — contain the FreeSWITCH telephony plane and Vanderbilt BYOD lateral movement (n06, n09).</li>\n<li><strong>M1026 Privileged Account Management</strong> — protect the Vanderbilt Okta surface and Windows AD domain admins (n09, n12).</li>\n</ol>";   // narrative prose, injected daily by tools/briefify.py
+  const BRIEF_DATE="2026-11-25";    // as-at date, refreshed daily by tools/briefify.py
+  const BRIEF_HTML="<p>News scan: 2026-11-25 05:00 AEDT</p>\n<h3>1. In-your-inbox exploit chain</h3>\n<p>Two actively exploited, deadline-driven patching stories dominate today (n01, n02). CISA added Cisco BroadWorks XXE and an Openwave Webtop flaw to its KEV catalog, while an Outlook zero-day (CVE-2026-124194) is being used to steal NTLMv2 hashes through crafted email files. Both are \"patch now\" items — <strong>M1051 Update Software</strong> is the load-bearing control, backed by <strong>M1043</strong> credential-access protection and <strong>M1050</strong> exploit protection at the perimeter.</p>\n<h3>2. Breach wave hits financial and cloud vendors</h3>\n<p>Three significant data-theft breaches landed overnight. SitusAMC (n03) lost corporate, accounting and legal records that put JPMorgan, Citi and Morgan Stanley customers at risk; Radware (n04) leaked customer cloud access keys through an unauthenticated API; and Cleverbridge (n07) confirmed payment card numbers and CVVs were stolen. Pull forward <strong>M1057 Data Loss Prevention</strong>, <strong>M1026 Privileged Account Management</strong> (rotate those Radware keys), and <strong>M1041 Encrypt Sensitive Information</strong>.</p>\n<h3>3. Ongoing exploitation campaigns</h3>\n<p>Check Point security management servers are under a persistent espionage-style campaign spanning 22 organisations (n05), and a GL.iNet cloud remote-management flaw is being actively abused to drop backdoors and reverse shells on routers (n06). For exposed management and network gear, apply <strong>M1051 Update Software</strong>, audit access with <strong>M1047</strong>, and segment management planes with <strong>M1030</strong>.</p>\n<h3>4. Priority order</h3>\n<ol>\n<li><strong>M1051 Update Software</strong> — patch the two actively exploited vulns and the Outlook zero-day (n01, n02, n05, n06).</li>\n<li><strong>M1026 Privileged Account Management</strong> — rotate Radware cloud keys and review vendor access scope after SitusAMC (n03, n04).</li>\n<li><strong>M1057 Data Loss Prevention</strong> — detect the exfiltration pattern common to this breach wave (n03, n07, n09).</li>\n<li><strong>M1043 Credential Access Protection</strong> — blunt the NTLMv2 hash-theft and cloud-key exposure threats (n02, n04).</li>\n<li><strong>M1019 Threat Intelligence Program</strong> — track the ShinyHunters re-emergence and the GT13 Check Point campaign (n05, n10).</li>\n</ol>";   // narrative prose, injected daily by tools/briefify.py
   document.getElementById("briefBody").innerHTML=`
   ${BRIEF_HTML}
 <h3>Where the activity concentrates (tactics)</h3>
@@ -979,8 +961,6 @@ document.getElementById("drawerX").onclick=hideDrawer;
 document.addEventListener("keydown",e=>{if(e.key==="Escape")hideDrawer();});
 window.addEventListener("hashchange",()=>{applyHash();renderAll();});
 document.getElementById("gen").textContent=new Date().toISOString().replace("T"," ").slice(0,16)+" UTC";
-function tick(){document.getElementById("clock").textContent=new Date().toISOString().replace("T"," ").slice(0,19)+"Z";}
-tick();setInterval(tick,1000);
 applyHash();
 renderAll();
 console.log("THREATBOARD ready —",ITEMS.length,"items,",Object.keys(TECHS).length,"techniques,",Object.keys(MIT).length,"mitigations");
