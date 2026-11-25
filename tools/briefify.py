@@ -53,6 +53,39 @@ INLINE = [
     (re.compile(r"`([^`\n]+?)`"), "<code>\\1</code>"),
 ]
 
+# The daily cron authors a "bottom-line-up-front" block at the very top of the
+# brief markdown, headed `## Bottom line`. briefify renders THAT into the styled
+# bottom-line box (BRIEF_BL) and everything after it into the narrative
+# BRIEF_HTML. `## Bottom line` is matched case-insensitively; nothing after it
+# up to the next level-2 `## ` heading becomes part of the box.
+BLUF_HEAD = re.compile(r"^##\s+Bottom line\s*:?\s*$", re.I)
+LEVEL2 = re.compile(r"^##\s+")
+
+
+def split_bluf(md: str) -> tuple[str, str]:
+    """Return (bluf_chunk, main_md). If no `## Bottom line` head exists, returns
+    ("", original_md) so the page falls back to the live-computed bottom line."""
+    lines = md.split("\n")
+    bluf, main = [], []
+    in_bluf = False
+    found = False
+    for raw in lines:
+        stripped = raw.strip()
+        if not in_bluf:
+            if BLUF_HEAD.match(stripped):
+                in_bluf, found = True, True
+                continue  # drop the heading itself; the box supplies its own <h4>
+            main.append(raw)
+            continue
+        if LEVEL2.match(stripped):
+            in_bluf = False
+            main.append(raw)
+            continue
+        bluf.append(raw)
+    if not found:
+        return "", md.strip("\n")
+    return "\n".join(bluf).strip("\n"), "\n".join(main).strip("\n")
+
 
 def inline(s: str) -> str:
     for pat, rep in INLINE:
@@ -138,26 +171,37 @@ def main():
         sys.exit("FAIL: could not determine brief date from items filename")
 
     md = Path(sys.argv[2]).read_text()
-    rendered = render(md).strip()
-    if not rendered:
+    bluf_md, narrative_md = split_bluf(md)
+    bluf = render(bluf_md).strip()
+    narrative = render(narrative_md).strip()
+    if not narrative:
         sys.exit("FAIL: brief markdown rendered to empty HTML")
 
-    injected = js_string(rendered)
+    bluf_js = js_string(bluf)
+    injected = js_string(narrative)
 
     html = INDEX.read_text()
     start = "const BRIEF_DATE="
+    start_bl = "const BRIEF_BL="
     end = "<h3>Where the activity concentrates"
-    if start not in html or end not in html:
+    if end not in html or (start not in html and start_bl not in html):
         sys.exit("FAIL: index.html missing BRIEF block anchors - run the setup patch first")
-    i = html.index(start)
-    # Anchor at the start of the line so our block's own indentation is
-    # deterministic (prior runs must not accumulate leading whitespace).
-    i = html.rfind("\n", 0, i) + 1
+    # Anchor the replacement at the EARLIEST of BRIEF_BL / BRIEF_DATE. Because a
+    # prior run injects a BRIEF_BL line immediately before BRIEF_DATE, anchoring
+    # only on BRIEF_DATE would strand that stale BRIEF_BL on every re-run. Taking
+    # the min of both keeps repeated briefify calls idempotent (daily cron runs it).
+    fi = min(html.index(m) for m in (start, start_bl) if m in html)
+    i = html.rfind("\n", 0, fi) + 1
     j = html.index(end, i)
     block = (
+        '  const BRIEF_BL=' + bluf_js + ';   // authored bottom-line-up-front, injected daily by tools/briefify.py\n'
         '  const BRIEF_DATE="' + brief_date + '";    // as-at date, refreshed daily by tools/briefify.py\n'
         '  const BRIEF_HTML=' + injected + ';   // narrative prose, injected daily by tools/briefify.py\n'
         '  document.getElementById("briefBody").innerHTML=`\n'
+        '  <div class="dsec" style="border:1px solid var(--line2);border-left:3px solid var(--acc);padding:12px 14px;margin-bottom:14px;background:linear-gradient(180deg,rgba(34,211,238,.05),transparent)">\n'
+        '    <h4 style="margin:0 0 6px;letter-spacing:.04em">Bottom line</h4>\n'
+        '    ${BRIEF_BL || bottomLine}\n'
+        '  </div>\n'
         '  ${BRIEF_HTML}\n'
     )
     html2 = html[:i] + block + html[j:]
